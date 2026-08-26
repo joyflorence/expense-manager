@@ -22,7 +22,11 @@ export function AuthPage() {
       const result = mode === 'sign-in'
         ? await authClient.signIn.email({ email, password })
         : await authClient.signUp.email({ name, email, password });
-      if (result.error) setMessage(result.error.message || 'Unable to continue.');
+      if (result.error) {
+        const authError = result.error as { message?: string; status?: number; statusCode?: number };
+        const status = authError.status || authError.statusCode;
+        setMessage(`${authError.message || 'Unable to continue.'}${status ? ` (HTTP ${status})` : ''}`);
+      }
       else if (mode === 'sign-up') setMessage('Account created. Check your email if verification is enabled.');
     } catch (error) {
       setMessage(error instanceof Error ? `Unable to reach Neon Auth: ${error.message}` : 'Unable to reach Neon Auth. Please try again.');

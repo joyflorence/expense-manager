@@ -19,8 +19,13 @@ async function request<T>(method: 'GET' | 'PUT' | 'DELETE', body?: unknown, path
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Cashbook API returned HTTP ${response.status}.`);
+    const responseText = await response.text();
+    let payload: { error?: string } = {};
+    try {
+      payload = JSON.parse(responseText) as { error?: string };
+    } catch {
+    }
+    if (!response.ok) throw new Error(payload.error || `Cashbook request ${method} ${path} returned HTTP ${response.status}.`);
   return payload as T;
 }
 

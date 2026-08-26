@@ -5,6 +5,9 @@ import { z } from 'zod';
 type Event = {
   httpMethod: string;
   path: string;
+  rawPath?: string;
+    const requestPath = event.rawPath || event.path || '';
+    const route = requestPath.replace(/^.*\/\.netlify\/functions\/api\/?/, '').replace(/^\/api\/?/, '').replace(/^\//, '').replace(/\/$/, '');
   headers: Record<string, string | undefined>;
   body: string | null;
 };
@@ -134,6 +137,7 @@ export const handler = async (event: Event) => {
     }
 
     return json(404, { error: 'API route not found.' });
+    return json(404, { error: `API route not found: ${event.httpMethod} ${requestPath}` });
   } catch (error) {
     console.error('Cashbook API error:', error);
     return json(500, { error: error instanceof Error ? error.message : 'Unexpected server error.' });
