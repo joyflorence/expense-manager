@@ -37,8 +37,8 @@ export function AuthPage() {
     setIsSubmitting(true);
     try {
       const result = mode === 'sign-in'
-        ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ name, email, password });
+        ? await authClient.auth.signIn.email({ email, password })
+        : await authClient.auth.signUp.email({ name, email, password });
       if (result.error) {
         const authError = result.error as { message?: string; status?: number; statusCode?: number };
         setMessage(formatAuthError(authError));
