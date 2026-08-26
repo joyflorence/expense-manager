@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LockKeyhole, Mail, UserRound, Wallet } from 'lucide-react';
-import { authClient, authConfigError } from '../auth';
+import { supabase, authConfigError } from '../auth';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
@@ -9,23 +9,6 @@ export function AuthPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const currentOrigin = window.location.origin;
-
-  const formatAuthError = (error: { message?: string; status?: number; statusCode?: number }) => {
-    const message = error.message || 'Unable to continue.';
-    const status = error.status || error.statusCode;
-    if (message.toLowerCase().includes('invalid origin')) {
-      return `${message}${status ? ` (HTTP ${status})` : ''} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`;
-    }
-    return `${message}${status ? ` (HTTP ${status})` : ''}`;
-  };
-
-  const formatUnexpectedAuthError = (error: unknown) => {
-    if (error instanceof TypeError && error.message.includes("'[object Promise]' is not a valid HTTP method")) {
-      return 'Neon Auth client configuration is incompatible with the deployed SDK. Redeploy after installing the pinned dependency version.';
-    }
-    return error instanceof Error ? `Unable to reach Neon Auth: ${error.message}` : 'Unable to reach Neon Auth. Please try again.';
-  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -36,19 +19,32 @@ export function AuthPage() {
     }
     setIsSubmitting(true);
     try {
-      const result = mode === 'sign-in'
-        ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ name, email, password });
-      if (result.error) {
-        const authError = result.error as { message?: string; status?: number; statusCode?: number };
-        setMessage(formatAuthError(authError));
+      if (mode === 'sign-in') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) {
+          setMessage(error.message);
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name: name.trim(),
+            },
+          },
+        });
+        if (error) {
+          setMessage(error.message);
+        } else if (data.user && !data.session) {
+          setMessage('Account created! Please check your email to confirm your account before signing in.');
+        }
       }
-      else if (mode === 'sign-up') setMessage('Account created. Check your email if verification is enabled.');
     } catch (error) {
-      const errorMessage = formatUnexpectedAuthError(error);
-      setMessage(errorMessage.toLowerCase().includes('invalid origin')
-        ? `${errorMessage} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`
-        : errorMessage);
+      setMessage(error instanceof Error ? error.message : 'Unable to complete authentication.');
     } finally {
       setIsSubmitting(false);
     }

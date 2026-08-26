@@ -14,11 +14,11 @@ import { DebtModal } from './components/DebtModal';
 import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
 import { CashbookState, loadCashbook, saveRecord, deleteRecord, RecordKind } from './api';
-import { authClient } from './auth';
+import { supabase, useSupabaseSession } from './auth';
 import { AuthPage } from './components/AuthPage';
 
 export default function App() {
-  const session = authClient.useSession();
+  const session = useSupabaseSession();
   // Financial Cashbook State
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [inflows, setInflows] = useState<Inflow[]>([]);
@@ -192,7 +192,7 @@ export default function App() {
       })
       .catch((error) => {
         setSyncStatus('error');
-        const message = error instanceof Error ? error.message : 'Could not refresh from Neon.';
+        const message = error instanceof Error ? error.message : 'Could not refresh from Supabase.';
         setSyncError(message);
         showToast(message);
       });
@@ -200,7 +200,7 @@ export default function App() {
 
   const handleSignOut = async () => {
     try {
-      await authClient.signOut?.();
+      await supabase.auth.signOut();
     } catch {
       // Ignore signOut network errors
     }
@@ -492,7 +492,7 @@ export default function App() {
 
   // Clear all data for clean slate
   const handleClearData = () => {
-    if (!window.confirm('Clear all expenses, inflows, budgets, debts, and repayment history from Neon? A JSON backup will download before deletion.')) return;
+    if (!window.confirm('Clear all expenses, inflows, budgets, debts, and repayment history from Supabase? A JSON backup will download before deletion.')) return;
     downloadBackup('clear');
     setExpenses([]);
     setInflows([]);
@@ -531,7 +531,7 @@ export default function App() {
       <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 grid place-items-center p-5">
         <div className="max-w-md space-y-4 text-center">
           <p className={syncStatus === 'error' ? 'text-rose-400 font-bold text-base' : 'text-slate-300'}>
-            {syncStatus === 'error' ? 'Could not load your cashbook from Neon.' : 'Loading your cashbook…'}
+            {syncStatus === 'error' ? 'Could not load your cashbook from Supabase.' : 'Loading your cashbook…'}
           </p>
           {syncStatus === 'error' && (
             <>
@@ -539,7 +539,7 @@ export default function App() {
                 {syncError || 'The cashbook API did not return a reason.'}
               </p>
               <p className="text-left text-xs text-slate-500 dark:text-slate-400">
-                Confirm `DATABASE_URL` uses Neon’s authenticated connection string and run migrations 0001 through 0004 on the same branch.
+                Confirm your Supabase project credentials in your environment and run the migration in the Supabase SQL Editor.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <button
@@ -693,7 +693,7 @@ export default function App() {
             className={`flex items-center gap-1.5 font-semibold ${syncStatus === 'error' ? 'text-rose-600 dark:text-rose-400 underline cursor-pointer' : 'text-emerald-600 dark:text-emerald-400'}`}
           >
             <span className={`w-2 h-2 rounded-full ${syncStatus === 'error' ? 'bg-rose-500' : syncStatus === 'saving' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-            {syncStatus === 'saving' ? 'SAVING TO NEON…' : syncStatus === 'error' ? 'SYNC FAILED — RETRY' : 'SAVED TO NEON'}
+            {syncStatus === 'saving' ? 'SAVING TO SUPABASE…' : syncStatus === 'error' ? 'SYNC FAILED — RETRY' : 'SAVED TO SUPABASE'}
           </button>
           <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
           <span className="text-slate-600 dark:text-slate-400 hidden sm:inline">FISCAL RECONCILIATION: ENABLED</span>

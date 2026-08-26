@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
@@ -27,17 +27,32 @@ const json = (statusCode: number, body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-function getSql(event: Event) {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not configured.');
-  const token = event.headers.authorization?.replace(/^Bearer\s+/i, '');
-  if (!token) throw new ApiError(401, 'Unauthorized');
-  return neon(process.env.DATABASE_URL, { authToken: token });
-}
-
 class ApiError extends Error {
   constructor(public statusCode: number, message: string) {
     super(message);
   }
+}
+
+function getSupabase(event: Event) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new ApiError(500, 'Supabase credentials (SUPABASE_URL and SUPABASE_ANON_KEY) are not configured on the server.');
+  }
+  const token = event.headers.authorization?.replace(/^Bearer\s+/i, '');
+  if (!token) throw new ApiError(401, 'Unauthorized');
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 function parseBody(event: Event) {
@@ -109,14 +124,21 @@ export const handler = async (event: Event) => {
     return { statusCode: 204, headers: { Allow: 'GET, PUT, DELETE, OPTIONS' }, body: '' };
   }
   try {
-    const sql = getSql(event);
+    const supabase = getSupabase(event);
     const requestPath = event.rawPath || event.path || '';
     const route = requestPath.replace(/^.*\/\.netlify\/functions\/api\/?/, '').replace(/^\/api\/?/, '').replace(/^\//, '').replace(/\/$/, '');
 
     if (event.httpMethod === 'GET' && (route === '' || route === 'state')) {
-      const rows = await sql`SELECT kind, record FROM cashbook_records ORDER BY occurred_on DESC NULLS LAST, created_at DESC`;
+      const { data: rows, error } = await supabase
+        .from('cashbook_records')
+        .select('kind, record')
+        .order('occurred_on', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw new ApiError(500, `Supabase query error: ${error.message}`);
+
       const state = { expenses: [] as unknown[], inflows: [] as unknown[], budgets: [] as unknown[], debts: [] as unknown[] };
-      for (const row of rows as Array<{ kind: RecordKind; record: unknown }>) {
+      for (const row of (rows || []) as Array<{ kind: RecordKind; record: unknown }>) {
         const target = `${row.kind === 'transfer' ? 'expense' : row.kind}s` as keyof typeof state;
         state[target].push(row.record);
       }
@@ -134,17 +156,41 @@ export const handler = async (event: Event) => {
         return json(400, { error: error instanceof Error ? error.message : 'Invalid record.' });
       }
       const row = normaliseRows(kind, [record])[0];
+
       if (kind === 'budget') {
-        await sql.query(
-          'WITH deleted AS (DELETE FROM cashbook_records WHERE kind = $1 AND month_key = $2 AND owner_user_id = auth.user_id()) INSERT INTO cashbook_records (id, kind, occurred_on, month_key, owner_user_id, record) VALUES ($3, $1, $4, $2, auth.user_id(), $5::jsonb)',
-          [kind, row.month, row.id, row.occurredOn, JSON.stringify(row.record)],
-        );
+        await supabase
+          .from('cashbook_records')
+          .delete()
+          .eq('kind', 'budget')
+          .eq('month_key', row.month);
+
+        const { error: insertError } = await supabase
+          .from('cashbook_records')
+          .insert({
+            id: row.id,
+            kind: 'budget',
+            occurred_on: row.occurredOn,
+            month_key: row.month,
+            record: row.record,
+          });
+
+        if (insertError) throw new ApiError(500, insertError.message);
       } else {
-        const result = await sql.query(
-          'INSERT INTO cashbook_records (id, kind, occurred_on, month_key, owner_user_id, record) VALUES ($1, $2, $3, $4, auth.user_id(), $5::jsonb) ON CONFLICT (id) DO UPDATE SET kind = EXCLUDED.kind, occurred_on = EXCLUDED.occurred_on, month_key = EXCLUDED.month_key, record = EXCLUDED.record, updated_at = now() WHERE cashbook_records.owner_user_id = auth.user_id() RETURNING id',
-          [row.id, kind, row.occurredOn, row.month, JSON.stringify(row.record)],
-        );
-        if (result.length === 0) return json(409, { error: 'This record belongs to another account.' });
+        const { error: upsertError } = await supabase
+          .from('cashbook_records')
+          .upsert(
+            {
+              id: row.id,
+              kind,
+              occurred_on: row.occurredOn,
+              month_key: row.month,
+              record: row.record,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+
+        if (upsertError) throw new ApiError(500, upsertError.message);
       }
       return json(200, { success: true });
     }
@@ -153,9 +199,18 @@ export const handler = async (event: Event) => {
       const body = parseBody(event) as { kind?: RecordKind; id?: string };
       if (!body.kind || !kinds.includes(body.kind) || !body.id) return json(400, { error: 'Invalid record deletion request.' });
       if (body.kind === 'budget') {
-        await sql.query('DELETE FROM cashbook_records WHERE kind = $1 AND month_key = $2 AND owner_user_id = auth.user_id()', [body.kind, body.id]);
+        const { error } = await supabase
+          .from('cashbook_records')
+          .delete()
+          .eq('kind', 'budget')
+          .eq('month_key', body.id);
+        if (error) throw new ApiError(500, error.message);
       } else {
-        await sql.query('DELETE FROM cashbook_records WHERE id = $1 AND owner_user_id = auth.user_id()', [body.id]);
+        const { error } = await supabase
+          .from('cashbook_records')
+          .delete()
+          .eq('id', body.id);
+        if (error) throw new ApiError(500, error.message);
       }
       return json(200, { success: true });
     }
@@ -167,3 +222,4 @@ export const handler = async (event: Event) => {
     return json(500, { error: error instanceof Error ? error.message : 'Unexpected server error.' });
   }
 };
+
