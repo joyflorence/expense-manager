@@ -356,7 +356,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                       <div className="font-semibold text-slate-900 dark:text-white text-sm">
                         {exp.title}
                       </div>
-                      {isThirdPartyTransferExpense(exp) ? (
                       {(() => {
                         const srcAcct = getExpenseSourceAccount(exp);
                         const destAcct = getExpenseDestinationAccount(exp);
