@@ -11,11 +11,13 @@ Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, b
    - **Project URL** (`https://<project-id>.supabase.co`)
    - **anon / public key**
 
-## Deploy to Netlify / Vercel
+## Deploy to Vercel
 
-In your hosting dashboard (Netlify or Vercel), add the following environment variables:
-- `SUPABASE_URL`: Your Supabase Project URL (`https://<project-id>.supabase.co`)
-- `SUPABASE_ANON_KEY`: Your Supabase Public `anon` Key
+1. Import this repository into **[Vercel](https://vercel.com)**.
+2. In your Vercel Project Settings → **Environment Variables**, add:
+   - `SUPABASE_URL`: Your Supabase Project URL (`https://<project-id>.supabase.co`)
+   - `SUPABASE_ANON_KEY`: Your Supabase Public `anon` Key
+3. Click **Deploy**. Vercel will automatically build the Vite frontend and deploy the serverless routes.
 
 *(Optional aliases `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are also supported automatically).*
 
