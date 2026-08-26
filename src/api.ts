@@ -8,58 +8,121 @@ export interface CashbookState {
   debts: DebtItem[];
 }
 
-type RequestOptions = {
-  method: 'GET' | 'PUT' | 'DELETE';
-  path: string;
-  body?: unknown;
-};
+export type RecordKind = 'expense' | 'inflow' | 'budget' | 'debt' | 'transfer';
 
-async function getAuthToken(): Promise<string | null> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) return session.access_token;
-  } catch (error) {
-    console.warn('Error fetching Supabase session token:', error);
+export async function loadCashbook(): Promise<CashbookState> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    throw new Error('Your session has expired. Please sign in again.');
   }
-  return null;
-}
 
-async function request<T>({ method, path, body }: RequestOptions): Promise<T> {
-  const httpMethod = String(method || '').toUpperCase();
-  if (httpMethod !== 'GET' && httpMethod !== 'PUT' && httpMethod !== 'DELETE' && httpMethod !== 'POST') {
-    throw new Error(`Invalid cashbook HTTP method: ${String(method)}`);
+  const { data: rows, error } = await supabase
+    .from('cashbook_records')
+    .select('kind, record')
+    .order('occurred_on', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (
+      error.code === '42P01' ||
+      error.message?.includes('relation "public.cashbook_records" does not exist') ||
+      error.message?.includes('does not exist')
+    ) {
+      throw new Error(
+        'Table "cashbook_records" was not found in Supabase. Please open Supabase SQL Editor and run the SQL migration in db/migrations/0001_supabase_setup.sql.'
+      );
+    }
+    throw new Error(`Supabase query failed: ${error.message}`);
   }
-  const token = await getAuthToken();
-  if (!token) throw new Error('Your session has expired. Please sign in again.');
-  const requestInit: RequestInit = {
-    method: httpMethod,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  };
-  const response = await window.fetch(path, requestInit);
-  const responseText = await response.text();
-  let payload: { error?: string } = {};
-  try {
-    payload = JSON.parse(responseText) as { error?: string };
-  } catch {
+
+  const state: CashbookState = { expenses: [], inflows: [], budgets: [], debts: [] };
+  for (const row of (rows || []) as Array<{ kind: RecordKind; record: unknown }>) {
+    const target = `${row.kind === 'transfer' ? 'expense' : row.kind}s` as keyof CashbookState;
+    if (Array.isArray(state[target])) {
+      (state[target] as unknown[]).push(row.record);
+    }
   }
-  if (!response.ok) throw new Error(payload.error || `Cashbook request ${httpMethod} ${path} returned HTTP ${response.status}.`);
-  return payload as T;
+  return state;
 }
 
-export function loadCashbook() {
-  return request<CashbookState>({ method: 'GET', path: '/api/state' });
+export async function saveRecord(kind: 'expense' | 'inflow' | 'budget' | 'debt', record: unknown): Promise<{ success: boolean }> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    throw new Error('Your session has expired. Please sign in again.');
+  }
+
+  const rec = record as Record<string, unknown>;
+  const id = typeof rec.id === 'string' && rec.id ? rec.id : crypto.randomUUID();
+  const dateField = kind === 'debt' ? 'issueDate' : kind === 'budget' ? 'month' : 'date';
+  const dateValue = typeof rec[dateField] === 'string' ? (rec[dateField] as string) : null;
+  const occurredOn = dateValue && /^\d{4}-\d{2}-\d{2}/.test(dateValue) ? dateValue.slice(0, 10) : null;
+  const month = kind === 'budget' ? dateValue : occurredOn ? occurredOn.slice(0, 7) : null;
+  const recordWithId = { ...rec, id };
+
+  const actualKind: RecordKind =
+    kind === 'expense' && rec.isBankToMobileTransfer === true && rec.transferRecipientType !== 'third_party'
+      ? 'transfer'
+      : kind;
+
+  if (actualKind === 'budget') {
+    await supabase
+      .from('cashbook_records')
+      .delete()
+      .eq('kind', 'budget')
+      .eq('month_key', month);
+
+    const { error } = await supabase
+      .from('cashbook_records')
+      .insert({
+        id,
+        kind: 'budget',
+        occurred_on: occurredOn,
+        month_key: month,
+        record: recordWithId,
+      });
+
+    if (error) throw new Error(`Failed to save budget: ${error.message}`);
+  } else {
+    const { error } = await supabase
+      .from('cashbook_records')
+      .upsert(
+        {
+          id,
+          kind: actualKind,
+          occurred_on: occurredOn,
+          month_key: month,
+          record: recordWithId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+
+    if (error) throw new Error(`Failed to save record: ${error.message}`);
+  }
+
+  return { success: true };
 }
 
-export type RecordKind = 'expense' | 'inflow' | 'budget' | 'debt';
+export async function deleteRecord(kind: 'expense' | 'inflow' | 'budget' | 'debt', id: string): Promise<{ success: boolean }> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    throw new Error('Your session has expired. Please sign in again.');
+  }
 
-export function saveRecord(kind: RecordKind, record: unknown) {
-  return request<{ success: boolean }>({ method: 'PUT', path: '/api/records', body: { kind, record } });
-}
+  if (kind === 'budget') {
+    const { error } = await supabase
+      .from('cashbook_records')
+      .delete()
+      .eq('kind', 'budget')
+      .eq('month_key', id);
+    if (error) throw new Error(`Failed to delete budget: ${error.message}`);
+  } else {
+    const { error } = await supabase
+      .from('cashbook_records')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error(`Failed to delete record: ${error.message}`);
+  }
 
-export function deleteRecord(kind: RecordKind, id: string) {
-  return request<{ success: boolean }>({ method: 'DELETE', path: '/api/records', body: { kind, id } });
+  return { success: true };
 }

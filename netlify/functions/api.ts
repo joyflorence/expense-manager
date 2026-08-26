@@ -33,13 +33,22 @@ class ApiError extends Error {
   }
 }
 
+function getHeader(headers: Record<string, string | undefined>, name: string): string | undefined {
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (key.toLowerCase() === target) return value;
+  }
+  return undefined;
+}
+
 function getSupabase(event: Event) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new ApiError(500, 'Supabase credentials (SUPABASE_URL and SUPABASE_ANON_KEY) are not configured on the server.');
   }
-  const token = event.headers.authorization?.replace(/^Bearer\s+/i, '');
+  const authHeader = getHeader(event.headers, 'authorization');
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
   if (!token) throw new ApiError(401, 'Unauthorized');
 
   return createClient(supabaseUrl, supabaseAnonKey, {
