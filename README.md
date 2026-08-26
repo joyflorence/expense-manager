@@ -6,7 +6,8 @@ Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, b
 
 1. Create a Neon project and enable **Auth** for its production branch. Copy the Auth URL from **Auth → Configuration**.
 2. In **Settings → RLS**, configure Neon RLS with the JWKS URL displayed on the Auth configuration page. Use the `authenticated` database connection string for `DATABASE_URL`.
-3. In Neon SQL Editor, run [`db/migrations/0001_cashbook_records.sql`](db/migrations/0001_cashbook_records.sql), then [`db/migrations/0002_auth_and_row_security.sql`](db/migrations/0002_auth_and_row_security.sql).
+3. In Neon SQL Editor, run [`db/migrations/0001_cashbook_records.sql`](db/migrations/0001_cashbook_records.sql), [`db/migrations/0002_auth_and_row_security.sql`](db/migrations/0002_auth_and_row_security.sql), [`db/migrations/0003_transfer_kind.sql`](db/migrations/0003_transfer_kind.sql), and [`db/migrations/0004_ownership_hardening.sql`](db/migrations/0004_ownership_hardening.sql).
+   If the table already contains rows from before Auth was enabled, inspect `owner_user_id IS NULL` rows and assign each one to the correct authenticated user's ID before validating the `cashbook_records_owner_required` constraint and making the column `NOT NULL`.
 4. Import this Git repository into Netlify. Its build settings are already defined in [`netlify.toml`](netlify.toml).
 5. In **Netlify → Site configuration → Environment variables**, add:
    - `DATABASE_URL`: the Neon connection string.

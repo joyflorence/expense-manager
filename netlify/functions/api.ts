@@ -30,15 +30,21 @@ const json = (statusCode: number, body: unknown) => ({
 function getSql(event: Event) {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not configured.');
   const token = event.headers.authorization?.replace(/^Bearer\s+/i, '');
-  if (!token) throw new Error('Unauthorized');
+  if (!token) throw new ApiError(401, 'Unauthorized');
   return neon(process.env.DATABASE_URL, { authToken: token });
+}
+
+class ApiError extends Error {
+  constructor(public statusCode: number, message: string) {
+    super(message);
+  }
 }
 
 function parseBody(event: Event) {
   try {
     return JSON.parse(event.body || '{}');
   } catch {
-    throw new Error('Request body must be valid JSON.');
+    throw new ApiError(400, 'Request body must be valid JSON.');
   }
 }
 
@@ -65,6 +71,16 @@ function validateRecord(kind: RecordKind, record: Record<string, unknown>) {
   }
   if (kind === 'inflow' && typeof record.taxDeduction === 'number' && record.taxDeduction < 0) throw new Error('taxDeduction cannot be negative.');
   if ((kind === 'expense' || kind === 'transfer') && typeof record.taxAmount === 'number' && record.taxAmount < 0) throw new Error('taxAmount cannot be negative.');
+  if (kind === 'inflow') {
+    const amount = Number(record.amount);
+    const tax = Number(record.taxDeduction || 0);
+    if (!Number.isFinite(tax) || tax < 0 || tax > amount || Number(record.netAmount) !== Number((amount - tax).toFixed(2))) throw new Error('Inflow amount, deduction, and net amount do not match.');
+  }
+  if (kind === 'expense' || kind === 'transfer') {
+    const amount = Number(record.amount);
+    const tax = Number(record.taxAmount || 0);
+    if (!Number.isFinite(tax) || tax < 0 || Number(record.totalAmount) !== Number((amount + tax).toFixed(2))) throw new Error('Expense amount, fee, and total amount do not match.');
+  }
   if (kind === 'debt') {
     if (record.dueDate !== undefined) dateSchema.parse(record.dueDate);
     const originalAmount = Number(record.originalAmount);
@@ -73,7 +89,9 @@ function validateRecord(kind: RecordKind, record: Record<string, unknown>) {
     const repayments = Array.isArray(record.repayments) ? record.repayments : [];
     for (const repayment of repayments) {
       if (!repayment || typeof repayment !== 'object') throw new Error('Invalid repayment record.');
-      dateSchema.parse((repayment as Record<string, unknown>).date);
+      const repaymentRecord = repayment as Record<string, unknown>;
+      dateSchema.parse(repaymentRecord.date);
+      if (typeof repaymentRecord.amount !== 'number' || !Number.isFinite(repaymentRecord.amount) || repaymentRecord.amount <= 0) throw new Error('Repayment amount must be positive.');
     }
     const repaymentTotal = repayments.reduce((sum, repayment) => sum + Number((repayment as Record<string, unknown>).amount || 0), 0);
     if (repaymentTotal > originalAmount) throw new Error('Repayments cannot exceed the debt amount.');
@@ -115,12 +133,17 @@ export const handler = async (event: Event) => {
       }
       const row = normaliseRows(kind, [record])[0];
       if (kind === 'budget') {
-        await sql.query('DELETE FROM cashbook_records WHERE kind = $1 AND record->>\'month\' = $2', [kind, String(record.month)]);
+        await sql.query(
+          'WITH deleted AS (DELETE FROM cashbook_records WHERE kind = $1 AND month_key = $2 AND owner_user_id = auth.user_id()) INSERT INTO cashbook_records (id, kind, occurred_on, month_key, owner_user_id, record) VALUES ($3, $1, $4, $2, auth.user_id(), $5::jsonb)',
+          [kind, row.month, row.id, row.occurredOn, JSON.stringify(row.record)],
+        );
+      } else {
+        const result = await sql.query(
+          'INSERT INTO cashbook_records (id, kind, occurred_on, month_key, owner_user_id, record) VALUES ($1, $2, $3, $4, auth.user_id(), $5::jsonb) ON CONFLICT (id) DO UPDATE SET kind = EXCLUDED.kind, occurred_on = EXCLUDED.occurred_on, month_key = EXCLUDED.month_key, record = EXCLUDED.record, updated_at = now() WHERE cashbook_records.owner_user_id = auth.user_id() RETURNING id',
+          [row.id, kind, row.occurredOn, row.month, JSON.stringify(row.record)],
+        );
+        if (result.length === 0) return json(409, { error: 'This record belongs to another account.' });
       }
-      await sql.query(
-        'INSERT INTO cashbook_records (id, kind, occurred_on, month_key, owner_user_id, record) VALUES ($1, $2, $3, $4, auth.user_id(), $5::jsonb) ON CONFLICT (id) DO UPDATE SET kind = EXCLUDED.kind, occurred_on = EXCLUDED.occurred_on, month_key = EXCLUDED.month_key, record = EXCLUDED.record, updated_at = now()',
-        [row.id, kind, row.occurredOn, row.month, JSON.stringify(row.record)],
-      );
       return json(200, { success: true });
     }
 
@@ -128,17 +151,17 @@ export const handler = async (event: Event) => {
       const body = parseBody(event) as { kind?: RecordKind; id?: string };
       if (!body.kind || !kinds.includes(body.kind) || !body.id) return json(400, { error: 'Invalid record deletion request.' });
       if (body.kind === 'budget') {
-        await sql.query('DELETE FROM cashbook_records WHERE kind = $1 AND record->>\'month\' = $2', [body.kind, body.id]);
+        await sql.query('DELETE FROM cashbook_records WHERE kind = $1 AND month_key = $2 AND owner_user_id = auth.user_id()', [body.kind, body.id]);
       } else {
         await sql.query('DELETE FROM cashbook_records WHERE id = $1 AND owner_user_id = auth.user_id()', [body.id]);
       }
       return json(200, { success: true });
     }
 
-    return json(404, { error: 'API route not found.' });
     return json(404, { error: `API route not found: ${event.httpMethod} ${requestPath}` });
   } catch (error) {
     console.error('Cashbook API error:', error);
+    if (error instanceof ApiError) return json(error.statusCode, { error: error.message });
     return json(500, { error: error instanceof Error ? error.message : 'Unexpected server error.' });
   }
 };

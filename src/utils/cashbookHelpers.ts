@@ -204,7 +204,7 @@ export function calculateCashbookBalances(
   const totalInflowTaxDeducted = inflows.reduce((sum, i) => sum + (i.taxDeduction || 0), 0);
 
   // If user has recorded bank inflows, use logged bank inflows; otherwise fallback to baseline net salary
-  const totalBankInflows = inflows.length > 0 ? loggedBankInflows : netIncome;
+  const totalBankInflows = bankInflowEntries.length > 0 ? loggedBankInflows : netIncome;
   const totalMoMoInflows = loggedMoMoInflows;
   const totalMtnInflows = loggedMtnInflows;
   const totalAirtelInflows = loggedAirtelInflows;

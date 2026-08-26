@@ -48,13 +48,37 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     e.preventDefault();
     try {
       const parsed = JSON.parse(importJson);
-      if (!parsed.expenses && !Array.isArray(parsed) && !parsed.inflows) {
+      const data = Array.isArray(parsed) ? { expenses: parsed } : parsed;
+      if (!data || typeof data !== 'object' || !Array.isArray(data.expenses)) {
         throw new Error('Invalid JSON backup file structure.');
       }
-      const importedExpenses = Array.isArray(parsed) ? parsed : (parsed.expenses || []);
-      const importedInflows = parsed.inflows || [];
-      const importedBudgets = parsed.budgets || budgets;
-      const importedDebts = parsed.debts || debts;
+      const isDate = (value: unknown) => {
+        if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+        const date = new Date(`${value}T00:00:00Z`);
+        return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+      };
+      const isAmount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0;
+      const importedExpenses = data.expenses.map((expense: Record<string, unknown>) => {
+        if (!expense || typeof expense !== 'object' || typeof expense.title !== 'string' || !isAmount(expense.amount) || !isAmount(expense.totalAmount) || !isDate(expense.date)) throw new Error('Invalid expense record in backup.');
+        return { ...expense, id: typeof expense.id === 'string' && expense.id ? expense.id : crypto.randomUUID() } as Expense;
+      });
+      const importedInflows = (data.inflows || []).map((inflow: Record<string, unknown>) => {
+        if (!inflow || typeof inflow !== 'object' || typeof inflow.title !== 'string' || !isAmount(inflow.amount) || typeof inflow.netAmount !== 'number' || inflow.netAmount <= 0 || !isDate(inflow.date)) throw new Error('Invalid inflow record in backup.');
+        return { ...inflow, id: typeof inflow.id === 'string' && inflow.id ? inflow.id : crypto.randomUUID() } as Inflow;
+      });
+      const importedBudgets = (data.budgets || budgets).map((budget: Record<string, unknown>) => {
+        if (!budget || typeof budget !== 'object' || typeof budget.month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(budget.month)) throw new Error('Invalid budget record in backup.');
+        return budget as MonthlyBudget;
+      });
+      const importedDebts = (data.debts || debts).map((debt: Record<string, unknown>) => {
+        if (!debt || typeof debt !== 'object' || typeof debt.title !== 'string' || !isAmount(debt.originalAmount) || !isDate(debt.issueDate)) throw new Error('Invalid debt record in backup.');
+        if (typeof debt.repaidAmount !== 'number' || debt.repaidAmount < 0 || debt.repaidAmount > debt.originalAmount) throw new Error('Invalid debt repayment amount in backup.');
+        if (!Array.isArray(debt.repayments)) throw new Error('Invalid debt repayment history in backup.');
+        for (const repayment of debt.repayments as Array<Record<string, unknown>>) {
+          if (!repayment || !isAmount(repayment.amount) || !isDate(repayment.date)) throw new Error('Invalid repayment record in backup.');
+        }
+        return { ...debt, id: typeof debt.id === 'string' && debt.id ? debt.id : crypto.randomUUID() } as DebtItem;
+      });
 
       onImportData({
         expenses: importedExpenses,

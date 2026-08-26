@@ -172,7 +172,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       method === 'Mobile Money Transfer' ||
       method === 'Bank Transfer'
     ) {
-      setDeductionSource('mobile_money');
+      setDeductionSource(
+        method === 'Bank Direct / Card Online' || method === 'Bank Transfer'
+          ? 'bank_account'
+          : 'mtn_mobile_money'
+      );
       if (method === 'Mobile Money Transfer') {
         handleTaxRateChange(0.5);
       } else {
@@ -224,35 +228,35 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setTitle('MTN Airtime / Voice Minutes');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money');
+      setDeductionSource('mtn_mobile_money');
       setVendor('MTN Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'airtel_airtime') {
       setTitle('Airtel Airtime / Voice Minutes');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money');
+      setDeductionSource('airtel_mobile_money');
       setVendor('Airtel Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'mtn_data') {
       setTitle('MTN Data Internet Bundle');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money');
+      setDeductionSource('mtn_mobile_money');
       setVendor('MTN Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'airtel_data') {
       setTitle('Airtel Data Internet Bundle');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money');
+      setDeductionSource('airtel_mobile_money');
       setVendor('Airtel Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'yaka_power') {
       setTitle('Umeme / Yaka Electricity Token');
       setCategory('Utilities & Bills');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mtn_mobile_money');
       setVendor('Umeme / Yaka');
       handleTaxRateChange(0.0);
     } else if (preset === 'cash_spending') {

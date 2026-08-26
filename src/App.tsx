@@ -27,6 +27,7 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading');
   const previousRecords = useRef<CashbookState | null>(null);
+  const syncQueue = useRef(Promise.resolve());
 
   const [currentTab, setCurrentTab] = useState<ViewTab>('overview');
 
@@ -99,34 +100,42 @@ export default function App() {
     setDebts(state.debts || []);
   };
 
-  const loadRemoteCashbook = async () => {
-    const state = await loadCashbook();
-    applyRemoteState(state);
-    setIsLoaded(true);
-    setSyncStatus('saved');
-  };
-
   useEffect(() => {
     if (!session.data) {
       setIsLoaded(false);
+      previousRecords.current = null;
       return;
     }
+    let cancelled = false;
     setIsLoaded(false);
     setSyncStatus('loading');
-    void loadRemoteCashbook().catch((error) => {
-      setIsLoaded(true);
-      previousRecords.current = { expenses: [], inflows: [], budgets: [], debts: [] };
-      setSyncStatus('error');
-      showToast(error instanceof Error ? error.message : 'Could not connect to the cashbook database.');
-    });
+    void loadCashbook()
+      .then((state) => {
+        if (cancelled) return;
+        applyRemoteState(state);
+        previousRecords.current = state;
+        setIsLoaded(true);
+        setSyncStatus('saved');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setIsLoaded(false);
+        setSyncStatus('error');
+        showToast(error instanceof Error ? error.message : 'Could not connect to the cashbook database.');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [session.data]);
 
   useEffect(() => {
     if (!isLoaded || !session.data) return;
     const current: CashbookState = { expenses, inflows, budgets, debts };
     const previous = previousRecords.current;
-    previousRecords.current = current;
-    if (!previous) return;
+    if (!previous) {
+      previousRecords.current = current;
+      return;
+    }
 
     const groups: Array<[RecordKind, Array<{ id?: string }>, Array<{ id?: string }>]> = [
       ['expense', current.expenses, previous.expenses],
@@ -149,7 +158,14 @@ export default function App() {
     }
     if (writes.length === 0) return;
     setSyncStatus('saving');
-    void Promise.all(writes).then(() => setSyncStatus('saved')).catch(() => setSyncStatus('error'));
+    syncQueue.current = syncQueue.current
+      .catch(() => undefined)
+      .then(() => Promise.all(writes))
+      .then(() => {
+        previousRecords.current = current;
+        setSyncStatus('saved');
+      })
+      .catch(() => setSyncStatus('error'));
   }, [isLoaded, session.data, expenses, inflows, budgets, debts]);
 
   useEffect(() => {
@@ -184,17 +200,7 @@ export default function App() {
   };
 
   const handleRetrySync = () => {
-    previousRecords.current = null;
-    setSyncStatus('saving');
-    const records: Array<[RecordKind, unknown[]]> = [
-      ['expense', expenses],
-      ['inflow', inflows],
-      ['budget', budgets.map((budget) => ({ ...budget, id: budget.month }))],
-      ['debt', debts],
-    ];
-    void Promise.all(records.flatMap(([kind, items]) => items.map((record) => saveRecord(kind, record))))
-      .then(() => setSyncStatus('saved'))
-      .catch(() => setSyncStatus('error'));
+    handleRefresh();
   };
 
   // Derived available months list
@@ -505,10 +511,19 @@ export default function App() {
 
   if (!session.data) return <AuthPage />;
 
-  if (!isLoaded && syncStatus === 'loading') {
+  if (!isLoaded) {
     return (
       <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-5">
-        <p className="text-slate-300">Loading your cashbook…</p>
+        <div className="max-w-md space-y-4 text-center">
+          <p className={syncStatus === 'error' ? 'text-rose-400' : 'text-slate-300'}>
+            {syncStatus === 'error' ? 'Could not load your cashbook from Neon.' : 'Loading your cashbook…'}
+          </p>
+          {syncStatus === 'error' && (
+            <button type="button" onClick={handleRefresh} className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950">
+              Retry loading cashbook
+            </button>
+          )}
+        </div>
       </main>
     );
   }
