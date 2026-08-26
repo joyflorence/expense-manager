@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MonthlyBudget } from '../types';
-import { X, SlidersHorizontal, DollarSign, Clock } from 'lucide-react';
+import { X, SlidersHorizontal } from 'lucide-react';
 
 interface BudgetModalProps {
   isOpen: boolean;
@@ -19,7 +19,6 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
 }) => {
   const [workBudget, setWorkBudget] = useState(200000);
   const [personalBudget, setPersonalBudget] = useState(200000);
-  const [targetHours, setTargetHours] = useState(160);
   const [monthlySalary, setMonthlySalary] = useState(500000);
   const [savingsTarget, setSavingsTarget] = useState(20000);
   const [localTax, setLocalTax] = useState(15000);
@@ -29,7 +28,6 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
     if (currentBudget) {
       setWorkBudget(currentBudget.workBudget);
       setPersonalBudget(currentBudget.personalBudget);
-      setTargetHours(currentBudget.targetProductivityHours);
       setMonthlySalary(currentBudget.monthlySalary ?? 500000);
       setSavingsTarget(currentBudget.savingsTarget ?? 20000);
       setLocalTax(currentBudget.localTax ?? 15000);
@@ -47,7 +45,6 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       month: selectedMonth,
       workBudget: Number(workBudget) || 0,
       personalBudget: Number(personalBudget) || 0,
-      targetProductivityHours: Number(targetHours) || 0,
       monthlySalary: Number(monthlySalary) || 0,
       savingsTarget: Number(savingsTarget) || 0,
       localTax: Number(localTax) || 0,
@@ -177,20 +174,6 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
               value={personalBudget}
               onChange={(e) => setPersonalBudget(parseFloat(e.target.value) || 0)}
               className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Monthly Target Productivity Hours
-            </label>
-            <input
-              type="number"
-              min="1"
-              required
-              value={targetHours}
-              onChange={(e) => setTargetHours(parseFloat(e.target.value) || 0)}
-              className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-bold"
             />
           </div>
 

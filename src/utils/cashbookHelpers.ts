@@ -129,12 +129,14 @@ export interface CashbookBalances {
   inflowEntries: Inflow[];
   totalBankInflows: number; // Inflows deposited/received into Bank account(s)
   totalMoMoInflows: number; // Inflows received directly into Mobile Money
+  totalMobileMoneyInflows: number; // Alias for totalMoMoInflows
   totalMtnInflows: number;
   totalAirtelInflows: number;
   totalCashInflows: number; // Inflows received directly in cash
   totalCombinedInflow: number; // Bank + MoMo + Cash Inflow
   totalLoggedGrossInflow: number; // Gross Inflows before taxes
   totalLoggedNetInflow: number; // Net Inflows received
+  totalInflowsLogged: number; // Alias for totalLoggedNetInflow
   totalInflowTaxDeducted: number; // Withholding / PAYE deducted at source
 
   // Bank to Mobile Transfers (Internal to Self)
@@ -331,12 +333,14 @@ export function calculateCashbookBalances(
     inflowEntries: inflows,
     totalBankInflows,
     totalMoMoInflows,
+    totalMobileMoneyInflows: totalMoMoInflows,
     totalMtnInflows,
     totalAirtelInflows,
     totalCashInflows,
     totalCombinedInflow,
     totalLoggedGrossInflow,
     totalLoggedNetInflow,
+    totalInflowsLogged: totalLoggedNetInflow,
     totalInflowTaxDeducted,
     bankToMobileEntries: selfBankToMobileEntries,
     totalBankToMobileTransferred,

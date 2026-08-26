@@ -82,7 +82,9 @@ function validateRecord(kind: RecordKind, record: Record<string, unknown>) {
     if (!Number.isFinite(tax) || tax < 0 || Number(record.totalAmount) !== Number((amount + tax).toFixed(2))) throw new Error('Expense amount, fee, and total amount do not match.');
   }
   if (kind === 'debt') {
-    if (record.dueDate !== undefined) dateSchema.parse(record.dueDate);
+    if (record.dueDate && typeof record.dueDate === 'string' && record.dueDate.trim() !== '') {
+      dateSchema.parse(record.dueDate);
+    }
     const originalAmount = Number(record.originalAmount);
     const repaidAmount = typeof record.repaidAmount === 'number' ? record.repaidAmount : 0;
     if (repaidAmount < 0 || repaidAmount > originalAmount) throw new Error('Repayment cannot exceed the debt amount.');

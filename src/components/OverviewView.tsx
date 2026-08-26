@@ -559,7 +559,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           <span className="font-semibold text-emerald-700 dark:text-emerald-300">
                             Destination: {inf.destinationAccount}
                           </span>
-                          {inf.sourceName && <span>• From: {inf.sourceName}</span>}
+                          {(inf.payerSource || (inf as Record<string, unknown>).sourceName) && (
+                            <span>• From: {inf.payerSource || (inf as Record<string, unknown>).sourceName as string}</span>
+                          )}
                           <span>•</span>
                           <span className="font-mono">{inf.date}</span>
                           {inf.notes && <span className="italic">• "{inf.notes}"</span>}
