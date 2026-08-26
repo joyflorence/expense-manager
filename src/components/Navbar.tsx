@@ -15,16 +15,21 @@ import {
   Moon,
   Landmark,
   Banknote,
-  ArrowDownLeft
+  ArrowDownLeft,
+  CalendarDays,
+  CalendarRange,
+  Clock,
+  ChevronDown
 } from 'lucide-react';
+import { DateFilterState, DateFilterMode } from '../types';
 
 export type ViewTab = 'overview' | 'expenses' | 'debts' | 'analytics';
 
 interface NavbarProps {
   currentTab: ViewTab;
   onTabChange: (tab: ViewTab) => void;
-  selectedMonth: string;
-  onMonthChange: (month: string) => void;
+  dateFilter: DateFilterState;
+  onDateFilterChange: (filter: DateFilterState) => void;
   availableMonths: string[];
   onOpenExpenseModal: () => void;
   onOpenInflowModal: () => void;
@@ -41,8 +46,8 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onTabChange,
-  selectedMonth,
-  onMonthChange,
+  dateFilter,
+  onDateFilterChange,
   availableMonths,
   onOpenExpenseModal,
   onOpenInflowModal,
@@ -55,6 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
   const handleRefreshClick = () => {
     setIsSpinning(true);
@@ -62,139 +68,109 @@ export const Navbar: React.FC<NavbarProps> = ({
     setTimeout(() => setIsSpinning(false), 600);
   };
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const setFilterMode = (mode: DateFilterMode) => {
+    onDateFilterChange({
+      ...dateFilter,
+      mode,
+      selectedDay: mode === 'today' ? todayStr : dateFilter.selectedDay || todayStr,
+    });
+    setIsFilterDropdownOpen(false);
+  };
+
   return (
-    <header className="bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 sticky top-0 z-30 shadow-sm transition-colors duration-200">
+    <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 sticky top-0 z-30 shadow-xs transition-colors duration-200">
       {/* Top Main Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-16 gap-3">
           
-          {/* Brand & Month Selector */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => onTabChange('overview')}>
-              <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-900 border border-slate-700/80 flex items-center justify-center text-emerald-400 font-bold shadow-sm">
-                <Wallet className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
-                  OMNITRACK<span className="text-emerald-500">.CASH</span>
-                </h1>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mt-0.5">
-                  Cashbook & Financial Ledger
-                </p>
-              </div>
+          {/* Brand */}
+          <div className="flex items-center gap-3 cursor-pointer select-none shrink-0" onClick={() => onTabChange('overview')}>
+            <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-emerald-400 font-bold shadow-xs">
+              <Wallet className="w-5 h-5 text-emerald-400" />
             </div>
-
-            {/* Month dropdown & Refresh button */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1 text-sm text-slate-800 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-700 transition">
-                <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => onMonthChange(e.target.value)}
-                  className="bg-transparent border-none text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold focus:ring-0 focus:outline-none cursor-pointer pr-1"
-                >
-                  {availableMonths.map((m) => {
-                    if (m === 'all') {
-                      return (
-                        <option key="all" value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
-                          All Months / All Time
-                        </option>
-                      );
-                    }
-                    const [year, monthNum] = m.split('-');
-                    const dateObj = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-                    const monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
-                    return (
-                      <option key={m} value={m} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
-                        {monthName}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefreshClick}
-                title="Refresh & Reload Data"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60 rounded-lg transition active:scale-95 shadow-sm"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${isSpinning ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
+            <div>
+              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-none">
+                OMNITRACK<span className="text-emerald-500">.CASH</span>
+              </h1>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mt-0.5 hidden sm:block">
+                Cashbook & Financial Ledger
+              </p>
             </div>
           </div>
 
-          {/* Quick Action Buttons & Theme Switcher */}
+          {/* Quick Action Buttons & Controls */}
           <div className="flex items-center gap-2">
             {/* Quick Action: Log Inflow */}
             <button
               id="navbar-add-inflow-btn"
               onClick={onOpenInflowModal}
-              title="Record Money Coming In (Salary, Client, MoMo Inflow, Gift, Sales)"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-lg transition active:scale-95 shadow-sm"
+              title="Record Money Coming In"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition active:scale-95 shadow-xs cursor-pointer"
             >
-              <ArrowDownLeft className="w-3.5 h-3.5 stroke-[3]" />
-              <span>+ Log Inflow</span>
+              <ArrowDownLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="hidden sm:inline">+ Log Inflow</span>
+              <span className="sm:hidden">+ Inflow</span>
             </button>
 
-            {/* Quick Action: Add Expense / Transaction */}
+            {/* Quick Action: Add Expense */}
             <button
               id="navbar-add-expense-btn"
               onClick={onOpenExpenseModal}
               title="Record Expense, Transfer or Cashout"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-lg transition active:scale-95 border border-slate-700 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition active:scale-95 border border-slate-700 shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <Receipt className="w-3.5 h-3.5" />
-              <span>Log Expense</span>
+              <span className="hidden sm:inline">Log Expense</span>
+              <span className="sm:hidden">Expense</span>
             </button>
 
-            {/* Dark / Light Theme Toggle Switch */}
+            {/* Refresh */}
+            <button
+              onClick={handleRefreshClick}
+              title="Refresh Data"
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSpinning ? 'animate-spin text-emerald-500' : ''}`} />
+            </button>
+
+            {/* Theme Toggle */}
             <button
               onClick={onToggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-amber-300 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 rounded-lg transition active:scale-95 shadow-sm"
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span className="hidden sm:inline">Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-indigo-600" />
-                  <span className="hidden sm:inline">Dark Mode</span>
-                </>
-              )}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
             </button>
 
-            <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-2 ml-1">
+            {/* Settings & Extra Controls */}
+            <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-800 pl-1.5 ml-0.5">
               <button
                 onClick={onOpenBudgetModal}
-                title="Edit Monthly Salary & Settings"
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition"
+                title="Monthly Budget & Salary Settings"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 <SlidersHorizontal className="w-4 h-4" />
               </button>
               <button
                 onClick={onOpenExportModal}
-                title="Export or Import Backup Data"
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition"
+                title="Export or Import Backup"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={onClearData}
-                title="Clear All Data (Start Fresh for your own entries)"
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition"
+                title="Clear All Data"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
               <button
                 onClick={onResetData}
-                title="Reset Clean Ledger"
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition"
+                title="Reset Default Ledger"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-sky-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -202,53 +178,207 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
+        {/* Date Filter & Range Toolbar */}
+        <div className="py-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          {/* Mode Pill Selectors */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button
+              type="button"
+              onClick={() => setFilterMode('month')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'month'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Month</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('today')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'today'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Today</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('day')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'day'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>Specific Day</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('this_week')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'this_week'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <CalendarRange className="w-3.5 h-3.5" />
+              <span>This Week</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('range')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'range'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <CalendarRange className="w-3.5 h-3.5" />
+              <span>Custom Range</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('all')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                dateFilter.mode === 'all'
+                  ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <span>All Time</span>
+            </button>
+          </div>
+
+          {/* Contextual Date Controls */}
+          <div className="flex items-center gap-2">
+            {dateFilter.mode === 'month' && (
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1">
+                <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                <select
+                  value={dateFilter.selectedMonth}
+                  onChange={(e) =>
+                    onDateFilterChange({ ...dateFilter, selectedMonth: e.target.value })
+                  }
+                  className="bg-transparent border-none text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none cursor-pointer"
+                >
+                  {availableMonths.map((m) => {
+                    if (m === 'all') return <option key="all" value="all">All Months</option>;
+                    const [year, monthNum] = m.split('-');
+                    const dateObj = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+                    const monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    return <option key={m} value={m}>{monthName}</option>;
+                  })}
+                </select>
+              </div>
+            )}
+
+            {dateFilter.mode === 'day' && (
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1">
+                <CalendarDays className="w-3.5 h-3.5 text-emerald-500" />
+                <input
+                  type="date"
+                  value={dateFilter.selectedDay || todayStr}
+                  onChange={(e) =>
+                    onDateFilterChange({ ...dateFilter, selectedDay: e.target.value })
+                  }
+                  className="bg-transparent border-none text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none cursor-pointer"
+                />
+              </div>
+            )}
+
+            {dateFilter.mode === 'today' && (
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-2 py-1">
+                📅 {todayStr}
+              </span>
+            )}
+
+            {dateFilter.mode === 'range' && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs">
+                  <span className="text-slate-400 text-[10px] font-bold">FROM:</span>
+                  <input
+                    type="date"
+                    value={dateFilter.startDate || `${todayStr.slice(0, 7)}-01`}
+                    onChange={(e) =>
+                      onDateFilterChange({ ...dateFilter, startDate: e.target.value })
+                    }
+                    className="bg-transparent border-none text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs">
+                  <span className="text-slate-400 text-[10px] font-bold">TO:</span>
+                  <input
+                    type="date"
+                    value={dateFilter.endDate || todayStr}
+                    onChange={(e) =>
+                      onDateFilterChange({ ...dateFilter, endDate: e.target.value })
+                    }
+                    className="bg-transparent border-none text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 border-t border-slate-200 dark:border-slate-800/80 text-xs sm:text-sm font-medium">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm font-medium">
           <button
             onClick={() => onTabChange('overview')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
               currentTab === 'overview'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+            <LayoutDashboard className="w-4 h-4 text-emerald-500" />
             Cashbook Overview
           </button>
 
           <button
             onClick={() => onTabChange('expenses')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
               currentTab === 'expenses'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Receipt className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+            <Receipt className="w-4 h-4 text-emerald-500" />
             Cashbook Ledger
           </button>
 
           <button
             onClick={() => onTabChange('debts')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
               currentTab === 'debts'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Landmark className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Landmark className="w-4 h-4 text-amber-500" />
             Debts & Friend Transfers
           </button>
 
           <button
             onClick={() => onTabChange('analytics')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
               currentTab === 'analytics'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <BarChart3 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+            <BarChart3 className="w-4 h-4 text-indigo-500" />
             Reports & Statements
           </button>
         </div>
