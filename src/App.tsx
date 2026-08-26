@@ -113,7 +113,10 @@ export default function App() {
     }
     setIsLoaded(false);
     setSyncStatus('loading');
-    void loadRemoteCashbook().catch(() => setSyncStatus('error'));
+    void loadRemoteCashbook().catch((error) => {
+      setSyncStatus('error');
+      showToast(error instanceof Error ? error.message : 'Could not connect to the cashbook database.');
+    });
   }, [session.data]);
 
   useEffect(() => {

@@ -20,7 +20,7 @@ async function request<T>(method: 'GET' | 'PUT' | 'DELETE', body?: unknown, path
     body: body ? JSON.stringify(body) : undefined,
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || 'Unable to reach your cashbook database.');
+  if (!response.ok) throw new Error(payload.error || `Cashbook API returned HTTP ${response.status}.`);
   return payload as T;
 }
 
