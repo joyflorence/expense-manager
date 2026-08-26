@@ -114,6 +114,8 @@ export default function App() {
     setIsLoaded(false);
     setSyncStatus('loading');
     void loadRemoteCashbook().catch((error) => {
+      setIsLoaded(true);
+      previousRecords.current = { expenses: [], inflows: [], budgets: [], debts: [] };
       setSyncStatus('error');
       showToast(error instanceof Error ? error.message : 'Could not connect to the cashbook database.');
     });
@@ -156,12 +158,19 @@ export default function App() {
 
   // Refresh data handler
   const handleRefresh = () => {
+    setSyncStatus('loading');
     void loadCashbook()
       .then((state) => {
         applyRemoteState(state);
+        previousRecords.current = state;
+        setIsLoaded(true);
+        setSyncStatus('saved');
         showToast(`Data Synced! ${state.expenses.length} transactions, ${state.inflows.length} inflows loaded.`);
       })
-      .catch(() => showToast('Could not refresh from Neon.'));
+      .catch((error) => {
+        setSyncStatus('error');
+        showToast(error instanceof Error ? error.message : 'Could not refresh from Neon.');
+      });
   };
 
   const handleSignOut = async () => {
@@ -496,12 +505,10 @@ export default function App() {
 
   if (!session.data) return <AuthPage />;
 
-  if (!isLoaded) {
+  if (!isLoaded && syncStatus === 'loading') {
     return (
       <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-5">
-        <p className={syncStatus === 'error' ? 'text-rose-400' : 'text-slate-300'}>
-          {syncStatus === 'error' ? 'Could not connect to the cashbook database.' : 'Loading your cashbook…'}
-        </p>
+        <p className="text-slate-300">Loading your cashbook…</p>
       </main>
     );
   }
