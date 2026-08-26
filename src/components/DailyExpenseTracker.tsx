@@ -309,6 +309,45 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
         </div>
       </div>
 
+      {/* 4-Channel Live Liquidity Strip (Bank, MTN MoMo, Airtel Money, Cash on Hand) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+            🏦 Bank Balance
+          </span>
+          <span className="text-sm font-black font-mono text-slate-900 dark:text-white block mt-0.5">
+            {formatUGX(balances.availableBankBalance)}
+          </span>
+        </div>
+
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+            📱 MTN MoMo
+          </span>
+          <span className="text-sm font-black font-mono text-amber-700 dark:text-amber-300 block mt-0.5">
+            {formatUGX(balances.availableMtnBalance)}
+          </span>
+        </div>
+
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+            🔴 Airtel Money
+          </span>
+          <span className="text-sm font-black font-mono text-rose-700 dark:text-rose-300 block mt-0.5">
+            {formatUGX(balances.availableAirtelBalance)}
+          </span>
+        </div>
+
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+            💵 Cash on Hand
+          </span>
+          <span className={`text-sm font-black font-mono block mt-0.5 ${balances.availableCashOnHand >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `-${formatUGX(Math.abs(balances.availableCashOnHand))}`}
+          </span>
+        </div>
+      </div>
+
       {/* Daily Expense Monitor for Selected Date */}
       <div className="bg-slate-50/60 dark:bg-slate-800/30 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">

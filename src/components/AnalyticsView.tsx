@@ -228,8 +228,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             <div className="text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
               {formatUGX(balances.availableMobileMoneyBalance)}
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">
-              +{formatUGX(balances.totalBankToMobileReceivedInMoMo)} received from Bank
+            <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">MTN: {formatUGX(balances.availableMtnBalance)}</span>
+              <span className="text-rose-600 dark:text-rose-400 font-semibold">Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
             </div>
           </div>
 

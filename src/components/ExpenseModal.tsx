@@ -309,6 +309,21 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   };
 
+  // Quick Preset Helper for MoMo to Bank Transfers (Deposit from Wallet into Bank)
+  const applyMoMoToBankPreset = (from: 'mtn' | 'airtel', bank: string) => {
+    setEntryMode('transfer');
+    setTransferRecipientType('self');
+    const sourceAcct: AccountType = from === 'mtn' ? 'mtn_mobile_money' : 'airtel_mobile_money';
+    setTransferSourceAccount(sourceAcct);
+    setTransferDestinationAccount('bank_account');
+    setSourceBank(bank);
+    setDeductionSource(sourceAcct);
+    setCategory('Internal Account Transfer');
+    setPaymentMethod(from === 'mtn' ? 'MTN to Airtel Transfer' : 'Airtel to MTN Transfer');
+    setTitle(`${from === 'mtn' ? 'MTN MoMo' : 'Airtel Money'} to ${bank.split(' ')[0]} Transfer`);
+    setTaxAmount(1000);
+  };
+
   useEffect(() => {
     if (expenseToEdit) {
       setTitle(expenseToEdit.title);
@@ -809,6 +824,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   >
                     🏦 Centenary ➔ Airtel
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => applyMoMoToBankPreset('mtn', 'Equity Bank Uganda')}
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 transition cursor-pointer"
+                  >
+                    📱 MTN ➔ 🏦 Equity Bank
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyMoMoToBankPreset('airtel', 'Stanbic Bank Uganda')}
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border border-rose-300 dark:border-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                  >
+                    🔴 Airtel ➔ 🏦 Stanbic
+                  </button>
                 </div>
               </div>
 
@@ -822,13 +851,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Recipient Name / Relation *
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Recipient / Payee Name *
                       </label>
                       <input
                         type="text"
                         required={transferRecipientType === 'third_party'}
-                        placeholder="e.g. Mother, Landlord, John Kamau, Contractor"
+                        placeholder="e.g. Mother, John Kamau, Landlord, Supplier"
                         value={recipientName}
                         onChange={(e) => {
                           setRecipientName(e.target.value);
@@ -841,8 +870,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs">
-                        Expense Category *
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Expense Classification Category
                       </label>
                       <select
                         value={category}
@@ -937,20 +966,35 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     onChange={(e) => {
                       const value = e.target.value as AccountType;
                       setTransferDestinationAccount(value);
-                      setRecipientNetwork(value === 'airtel_mobile_money' ? 'Airtel Money (*185#)' : 'MTN Mobile Money (*165#)');
+                      if (value === 'bank_account') {
+                        setRecipientNetwork('Bank Account');
+                      } else {
+                        setRecipientNetwork(value === 'airtel_mobile_money' ? 'Airtel Money (*185#)' : 'MTN Mobile Money (*165#)');
+                      }
                     }}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
                   >
                     <option value="mtn_mobile_money">MTN Mobile Money</option>
                     <option value="airtel_mobile_money">Airtel Money</option>
+                    <option value="bank_account">Bank Account</option>
                   </select>
-                  <select
-                    value={recipientNetwork}
-                    onChange={(e) => setRecipientNetwork(e.target.value)}
-                    className="w-full mt-2 px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
-                  >
-                    {MOBILE_NETWORKS.map((net) => <option key={net} value={net}>{net}</option>)}
-                  </select>
+                  {transferDestinationAccount === 'bank_account' ? (
+                    <select
+                      value={sourceBank}
+                      onChange={(e) => setSourceBank(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
+                    >
+                      {UGANDA_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  ) : (
+                    <select
+                      value={recipientNetwork}
+                      onChange={(e) => setRecipientNetwork(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
+                    >
+                      {MOBILE_NETWORKS.map((net) => <option key={net} value={net}>{net}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 

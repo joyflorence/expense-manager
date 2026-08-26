@@ -305,21 +305,24 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">{formatUGX(balances.availableMobileMoneyBalance)}</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-              MTN: {formatUGX(balances.availableMtnBalance)} • Airtel: {formatUGX(balances.availableAirtelBalance)}
-            </p>
+            <div className="mt-2 space-y-1 text-xs font-medium border-t border-slate-100 dark:border-slate-800/80 pt-2">
+              <div className="flex justify-between items-center text-amber-700 dark:text-amber-300">
+                <span className="flex items-center gap-1 font-semibold">📱 MTN MoMo:</span>
+                <span className="font-mono font-bold">{formatUGX(balances.availableMtnBalance)}</span>
+              </div>
+              <div className="flex justify-between items-center text-rose-700 dark:text-rose-300">
+                <span className="flex items-center gap-1 font-semibold">🔴 Airtel Money:</span>
+                <span className="font-mono font-bold">{formatUGX(balances.availableAirtelBalance)}</span>
+              </div>
+            </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Transfers In: {formatUGX(balances.totalBankToMobileTransferred)}</span>
+            <span>Inflows + Transfers</span>
             <button 
-              onClick={() => {
-                setFilterType('transfers');
-                const el = document.getElementById('cashbook-logs-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
+              onClick={() => onOpenExpenseModal('transfer')}
+              className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer flex items-center gap-0.5"
             >
-              Transfers
+              Transfer <ArrowRightLeft className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -803,14 +806,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </div>
 
               {/* 5. Mobile Money Wallet Pool */}
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white block font-sans">2. Mobile Money Wallet</span>
-                  <span className="text-[10px] text-slate-500 font-sans">MTN + Airtel wallets</span>
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-slate-900 dark:text-white block font-sans">2. Mobile Money Wallet</span>
+                    <span className="text-[10px] text-slate-500 font-sans">Total active balance</span>
+                  </div>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                    {formatUGX(balances.availableMobileMoneyBalance)}
+                  </span>
                 </div>
-                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                  {formatUGX(balances.availableMobileMoneyBalance)}
-                </span>
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60 dark:border-slate-700/50">
+                  <span className="text-amber-700 dark:text-amber-300 font-bold">MTN: {formatUGX(balances.availableMtnBalance)}</span>
+                  <span className="text-rose-700 dark:text-rose-300 font-bold">Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
+                </div>
               </div>
 
               {/* 6. Cash on Hand Drawer */}
