@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LockKeyhole, Mail, UserRound, Wallet } from 'lucide-react';
-import { authClient } from '../auth';
+import { authClient, authConfigError } from '../auth';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
@@ -13,6 +13,10 @@ export function AuthPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage('');
+    if (authConfigError) {
+      setMessage(authConfigError);
+      return;
+    }
     setIsSubmitting(true);
     try {
       const result = mode === 'sign-in'
@@ -20,8 +24,8 @@ export function AuthPage() {
         : await authClient.signUp.email({ name, email, password });
       if (result.error) setMessage(result.error.message || 'Unable to continue.');
       else if (mode === 'sign-up') setMessage('Account created. Check your email if verification is enabled.');
-    } catch {
-      setMessage('Unable to reach Neon Auth. Please try again.');
+    } catch (error) {
+      setMessage(error instanceof Error ? `Unable to reach Neon Auth: ${error.message}` : 'Unable to reach Neon Auth. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -40,7 +44,7 @@ export function AuthPage() {
         {mode === 'sign-up' && <label className="block text-sm font-medium">Name<div className="relative mt-2"><UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-10 pr-3 outline-none focus:border-emerald-500" /></div></label>}
         <label className="block text-sm font-medium">Email<div className="relative mt-2"><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-10 pr-3 outline-none focus:border-emerald-500" /></div></label>
         <label className="block text-sm font-medium">Password<div className="relative mt-2"><LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required minLength={8} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-10 pr-3 outline-none focus:border-emerald-500" /></div></label>
-        {message && <p className="text-xs text-rose-400">{message}</p>}
+        {(authConfigError || message) && <p className="text-xs text-rose-400">{authConfigError || message}</p>}
         <button disabled={isSubmitting} className="w-full rounded-xl bg-emerald-500 py-2.5 font-bold text-slate-950 disabled:opacity-60">{isSubmitting ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</button>
       </form>
     </main>
