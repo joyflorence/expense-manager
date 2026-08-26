@@ -200,39 +200,6 @@ export default function App() {
     showToast('Inflow record deleted');
   };
 
-  // Derived available months list
-  const availableMonths = [
-    'all',
-    ...Array.from(
-      new Set([
-        ...expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08')),
-        ...budgets.map((b) => b.month),
-        '2026-07',
-        '2026-08',
-      ])
-    ).filter((m) => m && m.length === 7 && m !== 'all').sort().reverse(),
-  ];
-
-  // Current month filtered data
-  const currentMonthExpenses = selectedMonth === 'all'
-    ? expenses
-    : expenses.filter((e) => {
-        const d = e.date;
-        if (!d) return true;
-        return d.slice(0, 7) === selectedMonth;
-      });
-
-  const currentBudget =
-    budgets.find((b) => b.month === selectedMonth) || {
-      month: selectedMonth === 'all' ? '2026-08' : selectedMonth,
-      workBudget: 200000,
-      personalBudget: 200000,
-      monthlySalary: 500000,
-      savingsTarget: 20000,
-      localTax: 15000,
-      nssfDeduction: 0,
-    };
-
   // Expense handlers
   const handleSaveExpense = (expenseData: Omit<Expense, 'id'>, editingId?: string) => {
     const todayStr = new Date().toISOString().slice(0, 10);
