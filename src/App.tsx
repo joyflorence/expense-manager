@@ -13,63 +13,16 @@ import { BudgetModal } from './components/BudgetModal';
 import { DebtModal } from './components/DebtModal';
 import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
-
-const STORAGE_KEYS = {
-  EXPENSES: 'omnitrack_expenses_v2',
-  INFLOWS: 'omnitrack_inflows_v2',
-  BUDGETS: 'omnitrack_budgets_v2',
-  DEBTS: 'omnitrack_debts_v2',
-};
+import { CashbookState, loadCashbook, saveCashbook } from './api';
 
 export default function App() {
   // Financial Cashbook State
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    if (saved !== null) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_EXPENSES;
-      }
-    }
-    return INITIAL_EXPENSES;
-  });
-
-  const [inflows, setInflows] = useState<Inflow[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.INFLOWS);
-    if (saved !== null) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_INFLOWS;
-      }
-    }
-    return INITIAL_INFLOWS;
-  });
-
-  const [budgets, setBudgets] = useState<MonthlyBudget[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.BUDGETS);
-    if (saved !== null) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_BUDGETS;
-      }
-    }
-    return INITIAL_BUDGETS;
-  });
-
-  const [debts, setDebts] = useState<DebtItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.DEBTS);
-    if (saved !== null) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_DEBTS;
-      }
-    }
-    return INITIAL_DEBTS;
-  });
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [inflows, setInflows] = useState<Inflow[]>([]);
+  const [budgets, setBudgets] = useState<MonthlyBudget[]>([]);
+  const [debts, setDebts] = useState<DebtItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading');
 
   const [currentTab, setCurrentTab] = useState<ViewTab>('overview');
 
@@ -122,22 +75,35 @@ export default function App() {
     }, 3500);
   };
 
-  // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-  }, [expenses]);
+  const applyRemoteState = (state: CashbookState) => {
+    setExpenses(state.expenses || []);
+    setInflows(state.inflows || []);
+    setBudgets(state.budgets || []);
+    setDebts(state.debts || []);
+  };
+
+  const loadRemoteCashbook = async () => {
+    const state = await loadCashbook();
+    applyRemoteState(state);
+    setIsLoaded(true);
+    setSyncStatus('saved');
+  };
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INFLOWS, JSON.stringify(inflows));
-  }, [inflows]);
+    void loadRemoteCashbook().catch(() => setSyncStatus('error'));
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(budgets));
-  }, [budgets]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(debts));
-  }, [debts]);
+    if (!isLoaded) return;
+    const state = { expenses, inflows, budgets, debts };
+    const timer = window.setTimeout(() => {
+      setSyncStatus('saving');
+      void saveCashbook(state)
+        .then(() => setSyncStatus('saved'))
+        .catch(() => setSyncStatus('error'));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [isLoaded, expenses, inflows, budgets, debts]);
 
   useEffect(() => {
     localStorage.setItem('omnitrack_selected_month', selectedMonth);
@@ -145,29 +111,12 @@ export default function App() {
 
   // Refresh data handler
   const handleRefresh = () => {
-    try {
-      const savedExpenses = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-      const parsedExpenses = savedExpenses ? JSON.parse(savedExpenses) : INITIAL_EXPENSES;
-      setExpenses(parsedExpenses);
-
-      const savedInflows = localStorage.getItem(STORAGE_KEYS.INFLOWS);
-      const parsedInflows = savedInflows ? JSON.parse(savedInflows) : INITIAL_INFLOWS;
-      setInflows(parsedInflows);
-
-      const savedBudgets = localStorage.getItem(STORAGE_KEYS.BUDGETS);
-      if (savedBudgets) {
-        setBudgets(JSON.parse(savedBudgets));
-      }
-
-      const savedDebts = localStorage.getItem(STORAGE_KEYS.DEBTS);
-      if (savedDebts) {
-        setDebts(JSON.parse(savedDebts));
-      }
-
-      showToast(`Data Synced! ${parsedExpenses.length} transactions, ${parsedInflows.length} inflows loaded.`);
-    } catch (e) {
-      showToast('Cashbook ledger refreshed successfully!');
-    }
+    void loadCashbook()
+      .then((state) => {
+        applyRemoteState(state);
+        showToast(`Data Synced! ${state.expenses.length} transactions, ${state.inflows.length} inflows loaded.`);
+      })
+      .catch(() => showToast('Could not refresh from Neon.'));
   };
 
   // Derived available months list
@@ -220,7 +169,6 @@ export default function App() {
     if (editingId) {
       setInflows((prev) => {
         const updated = prev.map((i) => (i.id === editingId ? { ...i, ...inflowData, date: infDate } : i));
-        localStorage.setItem(STORAGE_KEYS.INFLOWS, JSON.stringify(updated));
         return updated;
       });
       showToast(`Inflow "${inflowData.title}" updated!`);
@@ -232,7 +180,6 @@ export default function App() {
       };
       setInflows((prev) => {
         const updated = [newInflow, ...prev];
-        localStorage.setItem(STORAGE_KEYS.INFLOWS, JSON.stringify(updated));
         return updated;
       });
       showToast(`Cash Inflow "${inflowData.title}" (+${inflowData.amount.toLocaleString()} UGX) logged!`);
@@ -248,26 +195,9 @@ export default function App() {
   const handleDeleteInflow = (inflowId: string) => {
     setInflows((prev) => {
       const updated = prev.filter((i) => i.id !== inflowId);
-      localStorage.setItem(STORAGE_KEYS.INFLOWS, JSON.stringify(updated));
       return updated;
     });
     showToast('Inflow record deleted');
-  };
-
-      const savedBudgets = localStorage.getItem(STORAGE_KEYS.BUDGETS);
-      if (savedBudgets) {
-        setBudgets(JSON.parse(savedBudgets));
-      }
-
-      const savedDebts = localStorage.getItem(STORAGE_KEYS.DEBTS);
-      if (savedDebts) {
-        setDebts(JSON.parse(savedDebts));
-      }
-
-      showToast(`Data Synced! ${parsedExpenses.length} transactions loaded.`);
-    } catch (e) {
-      showToast('Cashbook ledger refreshed successfully!');
-    }
   };
 
   // Derived available months list
@@ -311,7 +241,6 @@ export default function App() {
     if (editingId) {
       setExpenses((prev) => {
         const updated = prev.map((e) => (e.id === editingId ? { ...e, ...expenseData, date: expDate } : e));
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(updated));
         return updated;
       });
       showToast(`Transaction "${expenseData.title}" updated!`);
@@ -323,7 +252,6 @@ export default function App() {
       };
       setExpenses((prev) => {
         const updated = [newExpense, ...prev];
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(updated));
         return updated;
       });
       showToast(`Transaction "${expenseData.title}" logged successfully!`);
@@ -340,7 +268,6 @@ export default function App() {
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((prev) => {
       const updated = prev.filter((e) => e.id !== expenseId);
-      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(updated));
       return updated;
     });
     showToast('Transaction deleted');
@@ -476,29 +403,38 @@ export default function App() {
   // Clear all data for clean slate
   const handleClearData = () => {
     setExpenses([]);
+    setInflows([]);
+    setBudgets([]);
     setDebts([]);
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify([]));
     showToast('Cleared all cashbook transactions and debt registers.');
   };
 
   // Reset clean baseline data
   const handleResetData = () => {
     setExpenses(INITIAL_EXPENSES);
+    setInflows(INITIAL_INFLOWS);
     setBudgets(INITIAL_BUDGETS);
     setDebts(INITIAL_DEBTS);
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(INITIAL_EXPENSES));
-    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(INITIAL_BUDGETS));
-    localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(INITIAL_DEBTS));
     showToast('Clean cashbook slate ready for your entries.');
   };
 
   // Import JSON backup
-  const handleImportData = (data: { expenses: Expense[]; budgets: MonthlyBudget[]; debts?: DebtItem[] }) => {
+  const handleImportData = (data: { expenses: Expense[]; inflows?: Inflow[]; budgets: MonthlyBudget[]; debts?: DebtItem[] }) => {
     if (data.expenses) setExpenses(data.expenses);
+    if (data.inflows) setInflows(data.inflows);
     if (data.budgets) setBudgets(data.budgets);
     if (data.debts) setDebts(data.debts);
   };
+
+  if (!isLoaded) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-5">
+        <p className={syncStatus === 'error' ? 'text-rose-400' : 'text-slate-300'}>
+          {syncStatus === 'error' ? 'Could not connect to the cashbook database.' : 'Loading your cashbook…'}
+        </p>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-200">
@@ -512,6 +448,10 @@ export default function App() {
         onOpenExpenseModal={() => {
           setExpenseToEdit(null);
           setIsExpenseModalOpen(true);
+        }}
+        onOpenInflowModal={() => {
+          setInflowToEdit(null);
+          setIsInflowModalOpen(true);
         }}
         onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
@@ -535,6 +475,7 @@ export default function App() {
         {currentTab === 'overview' && (
           <OverviewView
             expenses={currentMonthExpenses}
+            inflows={currentMonthInflows}
             debts={debts}
             budget={currentBudget}
             selectedMonth={selectedMonth}
@@ -547,6 +488,15 @@ export default function App() {
               setExpenseToEdit(null);
               setIsExpenseModalOpen(true);
             }}
+            onOpenInflowModal={() => {
+              setInflowToEdit(null);
+              setIsInflowModalOpen(true);
+            }}
+            onEditInflow={(inflow) => {
+              setInflowToEdit(inflow);
+              setIsInflowModalOpen(true);
+            }}
+            onDeleteInflow={handleDeleteInflow}
             onNavigateToTab={setCurrentTab}
             onUpdateBudgetSalary={handleUpdateBudgetSalary}
           />
@@ -597,6 +547,7 @@ export default function App() {
         {currentTab === 'analytics' && (
           <AnalyticsView
             expenses={currentMonthExpenses}
+            inflows={currentMonthInflows}
             budget={currentBudget}
             selectedMonth={selectedMonth}
           />
@@ -658,6 +609,14 @@ export default function App() {
         initialMode={expenseModalInitialMode}
       />
 
+      <InflowModal
+        isOpen={isInflowModalOpen}
+        onClose={() => setIsInflowModalOpen(false)}
+        onSave={handleSaveInflow}
+        inflowToEdit={inflowToEdit}
+        selectedMonth={selectedMonth}
+      />
+
       <BudgetModal
         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
@@ -684,6 +643,7 @@ export default function App() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         expenses={expenses}
+        inflows={inflows}
         budgets={budgets}
         debts={debts}
         onImportData={handleImportData}

@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# OmniTrack Cashbook
 
-# Run and deploy your AI Studio app
+Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, budgets, savings, debts, and repayments. The React app is hosted on Netlify and persists its data in Neon Postgres through a Netlify Function.
 
-This contains everything you need to run your app locally.
+## Deploy to Netlify
 
-View your app in AI Studio: https://ai.studio/apps/8a0d2a45-8a75-40a9-a94c-1758b5377e15
+1. Create a Neon project and copy its pooled connection string.
+2. In Neon SQL Editor, run [`db/migrations/0001_cashbook_records.sql`](db/migrations/0001_cashbook_records.sql).
+3. Import this Git repository into Netlify. Its build settings are already defined in [`netlify.toml`](netlify.toml).
+4. In **Netlify → Site configuration → Environment variables**, add:
+   - `DATABASE_URL`: the Neon connection string.
+5. Deploy. Netlify uses Node 20 and runs `npm install && npm run build`.
 
-## Run Locally
+This is a single-user setup without authentication. Keep the Netlify site URL private; anyone who can reach the site's API endpoint can read or change the cashbook data.
 
-**Prerequisites:**  Node.js
+## Optional local development
 
+Install Node 20+ and run:
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```powershell
+npm install
+npm run dev
+```
+
+For local access, set `DATABASE_URL` in `.env.local`.
