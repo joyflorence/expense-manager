@@ -6,8 +6,6 @@ type Event = {
   httpMethod: string;
   path: string;
   rawPath?: string;
-    const requestPath = event.rawPath || event.path || '';
-    const route = requestPath.replace(/^.*\/\.netlify\/functions\/api\/?/, '').replace(/^\/api\/?/, '').replace(/^\//, '').replace(/\/$/, '');
   headers: Record<string, string | undefined>;
   body: string | null;
 };
@@ -92,7 +90,8 @@ export const handler = async (event: Event) => {
   }
   try {
     const sql = getSql(event);
-    const route = event.path.replace(/^.*\/.netlify\/functions\/api\/?/, '').replace(/^\/api\/?/, '').replace(/^\//, '');
+    const requestPath = event.rawPath || event.path || '';
+    const route = requestPath.replace(/^.*\/\.netlify\/functions\/api\/?/, '').replace(/^\/api\/?/, '').replace(/^\//, '').replace(/\/$/, '');
 
     if (event.httpMethod === 'GET' && (route === '' || route === 'state')) {
       const rows = await sql`SELECT kind, record FROM cashbook_records ORDER BY occurred_on DESC NULLS LAST, created_at DESC`;
