@@ -506,14 +506,14 @@ export default function App() {
   };
 
   if (session.isPending) {
-    return <main className="min-h-screen bg-slate-950 text-slate-300 grid place-items-center">Checking your session…</main>;
+    return <main className="min-h-screen bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300 grid place-items-center">Checking your session…</main>;
   }
 
   if (!session.data) return <AuthPage />;
 
   if (!isLoaded) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-5">
+      <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 grid place-items-center p-5">
         <div className="max-w-md space-y-4 text-center">
           <p className={syncStatus === 'error' ? 'text-rose-400' : 'text-slate-300'}>
             {syncStatus === 'error' ? 'Could not load your cashbook from Neon.' : 'Loading your cashbook…'}
