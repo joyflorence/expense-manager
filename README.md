@@ -29,3 +29,12 @@ npm run dev
 ```
 
 For local access, set `DATABASE_URL` in `.env.local`.
+
+## Deploy to Vercel
+
+1. Import this repository into Vercel. The included [`vercel.json`](vercel.json) builds the Vite app and routes `/api/state` and `/api/records` through [`api/[...path].ts`](api/[...path].ts).
+2. Add these Vercel environment variables for the Production, Preview, and Development environments as needed:
+   - `DATABASE_URL`: the authenticated Neon connection string for the same branch as Auth.
+   - `VITE_NEON_AUTH_URL`: the Neon Auth Base URL.
+3. Add the Vercel deployment origin to Neon Console → Auth → Configuration → Domains. Add the custom domain separately if you use one.
+4. Run migrations `0001` through `0004` on the same Neon branch before using the cashbook API.

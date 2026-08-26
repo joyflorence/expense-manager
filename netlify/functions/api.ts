@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
-type Event = {
+export type Event = {
   httpMethod: string;
   path: string;
   rawPath?: string;
