@@ -142,79 +142,71 @@ export const DebtView: React.FC<DebtViewProps> = ({
 
         <button
           onClick={onOpenDebtModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm transition shadow-lg shadow-emerald-950/20 active:scale-95 shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition rounded-xl shadow-xs active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Record Debt / Transfer</span>
+          <span>Record Debt / Loan</span>
         </button>
       </div>
 
       {/* Borrowing Position & Safety Indicator Card */}
-      <div
-        className={`p-4 sm:p-5 rounded-2xl border shadow-lg space-y-3 relative overflow-hidden transition-all duration-300 ${
-          borrowingStatus === 'critical'
-            ? 'bg-gradient-to-r from-rose-950/90 via-slate-900 to-rose-950/90 text-white border-rose-500/50'
-            : borrowingStatus === 'caution'
-            ? 'bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 text-white border-amber-500/50'
-            : 'bg-gradient-to-r from-emerald-950/90 via-slate-900 to-emerald-950/90 text-white border-emerald-500/50'
-        }`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+      <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className={`p-3 rounded-2xl shrink-0 border ${
+            <div className={`p-2.5 rounded-xl shrink-0 border ${
               borrowingStatus === 'critical'
-                ? 'bg-rose-500/20 border-rose-400/40 text-rose-300'
+                ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
                 : borrowingStatus === 'caution'
-                ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
-                : 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300'
+                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
             }`}>
               {borrowingStatus === 'critical' ? (
-                <Ban className="w-7 h-7 text-rose-400 animate-pulse" />
+                <Ban className="w-6 h-6 text-rose-400" />
               ) : borrowingStatus === 'caution' ? (
-                <ShieldAlert className="w-7 h-7 text-amber-400" />
+                <ShieldAlert className="w-6 h-6 text-amber-400" />
               ) : (
-                <ShieldCheck className="w-7 h-7 text-emerald-400" />
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
               )}
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                   borrowingStatus === 'critical'
-                    ? 'bg-rose-500/30 border-rose-400/40 text-rose-200'
+                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
                     : borrowingStatus === 'caution'
-                    ? 'bg-amber-500/30 border-amber-400/40 text-amber-200'
-                    : 'bg-emerald-500/30 border-emerald-400/40 text-emerald-200'
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                    : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                 }`}>
                   {borrowingTitle}
                 </span>
 
-                <span className="text-[11px] font-bold text-slate-300">
-                  DTI Ratio: <strong className="text-amber-300 font-mono">{debtToSalaryRatio.toFixed(1)}%</strong> of Monthly Salary ({formatUGX(monthlySalary)})
+                <span className="text-xs font-medium text-slate-400">
+                  DTI: <strong className="text-slate-200 font-mono">{debtToSalaryRatio.toFixed(1)}%</strong> of Monthly Salary ({formatUGX(monthlySalary)})
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm font-medium text-slate-200 leading-relaxed">
+              <p className="text-xs text-slate-300 font-normal leading-relaxed">
                 {borrowingAdvice}
               </p>
             </div>
           </div>
 
-          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 shrink-0 flex items-center justify-around md:justify-end gap-4 text-center md:text-right">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 shrink-0 flex items-center justify-around md:justify-end gap-4 text-center md:text-right">
             <div>
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase block">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">
                 Active Debt
               </span>
-              <span className="text-lg font-black text-rose-400 font-mono">
+              <span className="text-base font-black text-rose-400 font-mono">
                 {formatUGX(totalBorrowedActive)}
               </span>
             </div>
 
             <div className="border-l border-slate-800 pl-4">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase block">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">
                 Overdue Loans
               </span>
-              <span className={`text-lg font-black font-mono ${overdueBorrowedCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              <span className={`text-base font-black font-mono ${overdueBorrowedCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                 {overdueBorrowedCount}
               </span>
             </div>

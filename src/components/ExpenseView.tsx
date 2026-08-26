@@ -132,16 +132,16 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
           {onOpenTransferModal && (
             <button
               onClick={onOpenTransferModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-600/30 transition active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 border border-slate-700 cursor-pointer"
             >
               <ArrowRightLeft className="w-4 h-4" />
-              Transfer Bank ➔ MoMo
+              Transfer Funds
             </button>
           )}
 
           <button
             onClick={onAddExpense}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-600/30 transition active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Log Transaction
@@ -150,58 +150,58 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Ledger Activity</span>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Activity</span>
+          <div className="text-xl font-black text-slate-900 dark:text-white font-mono mt-1">
             {formatUGX(totalSpend)}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            {expenses.length} transaction entries logged
+            {expenses.length} entries logged
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-indigo-500/30 dark:border-indigo-800/60 shadow-sm">
-          <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-            <ArrowRightLeft className="w-3.5 h-3.5" /> Bank ➔ MoMo Transferred
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <ArrowRightLeft className="w-3.5 h-3.5 text-slate-400" /> Transfers
           </span>
-          <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className="text-xl font-black text-slate-900 dark:text-white font-mono mt-1">
             {formatUGX(totalTransferred)}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            Deducted from Bank account
+            Transferred liquidity
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-emerald-500/30 dark:border-emerald-800/60 shadow-sm">
-          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-            <PiggyBank className="w-3.5 h-3.5" /> Total Savings Logged
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <PiggyBank className="w-3.5 h-3.5 text-emerald-500" /> Savings Logged
           </span>
-          <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
             {formatUGX(totalSavings)}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            Net of tax involved
+            Deposited to savings
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Taxes & Fees</span>
-          <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Fees & Taxes</span>
+          <div className="text-xl font-black text-slate-900 dark:text-white font-mono mt-1">
             {formatUGX(totalTaxIncurred)}
           </div>
-          <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-            Avg fee/tax ~{totalSpend > 0 ? ((totalTaxIncurred / (totalSpend - totalTaxIncurred)) * 100).toFixed(1) : 0}%
+          <div className="text-xs text-slate-500 mt-1">
+            Incurred transfer/tax fees
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Work Deductible Tax</span>
-          <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Work Deductible</span>
+          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
             {formatUGX(deductibleTaxes)}
           </div>
           <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-            <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> Tax write-off eligible
+            <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> Tax write-off
           </div>
         </div>
       </div>

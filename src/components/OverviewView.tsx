@@ -122,41 +122,41 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header Greeting */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Wallet className="w-6 h-6 text-emerald-500" />
-            Cashbook Overview & Financial Ledger
+            Cashbook Overview
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-            Monitor Bank funds, Bank ➔ Mobile transfers, Cashouts to pocket, and maintain your <strong className="text-emerald-600 dark:text-emerald-400 font-mono">UGX {targetSavingsValue.toLocaleString()}</strong> savings goal.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Overview of Bank, Mobile Money, Cash Drawer, Inflows, and Savings Target.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onOpenInflowModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
           >
-            <ArrowDownLeft className="w-4 h-4 stroke-[3]" />
+            <ArrowDownLeft className="w-4 h-4 stroke-[2.5]" />
             <span>+ Log Inflow</span>
           </button>
 
           <button
             onClick={() => onOpenExpenseModal('transfer')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 border border-slate-700 cursor-pointer"
           >
             <ArrowRightLeft className="w-4 h-4 stroke-[2.5]" />
-            <span>Transfer Bank ➔ Mobile</span>
+            <span>Transfer Funds</span>
           </button>
 
           <button
             onClick={() => onOpenExpenseModal('spending')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 border border-slate-700"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 border border-slate-700 cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Log Expense</span>
           </button>
         </div>
@@ -174,29 +174,29 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         onUpdateBudgetSalary={onUpdateBudgetSalary}
       />
 
-      {/* Inflows & Total Inflow Summary Banner */}
-      <div className="bg-gradient-to-r from-emerald-900/90 via-slate-900 to-indigo-950 p-4 sm:p-5 rounded-2xl border border-emerald-500/40 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* Inflows & Total Inflow Summary Card */}
+      <div className="bg-slate-900 dark:bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
             <ArrowDownLeft className="w-6 h-6 stroke-[2.5]" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-black uppercase tracking-wider text-emerald-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
                 Tracked Cash Inflows (Money In)
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                {inflows.length} Record(s) Logged
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {inflows.length} Record(s)
               </span>
             </div>
             <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400 mt-1">
               +{formatUGX(balances.totalInflowsLogged)}
             </div>
-            <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-3 flex-wrap font-medium">
-              <span>🏦 Bank Inflow: <strong className="font-mono text-white">{formatUGX(balances.totalBankInflows)}</strong></span>
-              <span>📱 MoMo Inflow: <strong className="font-mono text-white">{formatUGX(balances.totalMobileMoneyInflows)}</strong></span>
-              <span>💵 Cash Inflow: <strong className="font-mono text-white">{formatUGX(balances.totalCashInflows)}</strong></span>
-            </p>
+            <div className="text-xs text-slate-400 mt-1 flex items-center gap-3 flex-wrap font-medium">
+              <span>🏦 Bank: <strong className="font-mono text-white">{formatUGX(balances.totalBankInflows)}</strong></span>
+              <span>📱 MoMo: <strong className="font-mono text-white">{formatUGX(balances.totalMobileMoneyInflows)}</strong></span>
+              <span>💵 Cash: <strong className="font-mono text-white">{formatUGX(balances.totalCashInflows)}</strong></span>
+            </div>
           </div>
         </div>
 
@@ -207,13 +207,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               const el = document.getElementById('cashbook-logs-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="px-3 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-xl transition border border-white/10"
+            className="px-3 py-1.5 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 cursor-pointer"
           >
             View Inflows
           </button>
           <button
             onClick={onOpenInflowModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs rounded-xl transition active:scale-95 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl transition active:scale-95 shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
             <span>Log Cash In</span>
@@ -224,183 +224,179 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       {/* Borrowing Position & Transfers Quick Status Banner */}
       <div
         onClick={() => onNavigateToTab('debts')}
-        className="cursor-pointer bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-amber-500/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+        className="cursor-pointer bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
       >
         <div className="flex items-center gap-3">
           <div className={`p-2.5 rounded-xl border shrink-0 ${
             dtiRatio > 60
-              ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
+              ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400'
               : dtiRatio > 30
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-600 dark:text-amber-400'
+              : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400'
           }`}>
             <Landmark className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                Borrowing Position & Friend Transfers
+              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Debt Position & Loans
               </span>
-              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase border ${
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${
                 dtiRatio > 60
-                  ? 'bg-rose-500/20 border-rose-500/30 text-rose-600 dark:text-rose-300'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
                   : dtiRatio > 30
-                  ? 'bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-300'
-                  : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-300'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
               }`}>
-                {dtiRatio > 60 ? 'DO NOT BORROW (HIGH RISK)' : dtiRatio > 30 ? 'CAUTION POSITION' : 'SAFE BORROWING CAPACITY'}
+                {dtiRatio > 60 ? 'HIGH RISK' : dtiRatio > 30 ? 'CAUTION' : 'SAFE'}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Active Debt: <strong className="text-rose-600 dark:text-rose-400 font-mono">{formatUGX(activeBorrowed)}</strong> ({dtiRatio.toFixed(0)}% of salary) • Money Lent to Friends: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatUGX(activeLent)}</strong>
+              Active Debt: <strong className="text-rose-600 dark:text-rose-400 font-mono">{formatUGX(activeBorrowed)}</strong> • Lent to Friends: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatUGX(activeLent)}</strong>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition shrink-0">
-          <span>Manage Debts & Loans</span>
+        <div className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-emerald-500 transition shrink-0">
+          <span>Manage Debts</span>
           <ArrowUpRight className="w-4 h-4" />
         </div>
       </div>
 
       {/* 5 Core Cashbook Summary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         
         {/* Card 1: Available Money in Bank */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Available in Bank</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <Landmark className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Bank Account</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <Landmark className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-black font-mono text-slate-900 dark:text-white">{formatUGX(balances.availableBankBalance)}</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
-              Net salary less transfers & ATM cashouts
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+              Net salary less transfers & cashouts
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
             <span>Net: {formatUGX(balances.netIncome)}</span>
             <button 
               onClick={() => onOpenExpenseModal('transfer')}
-              className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5 font-bold"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
             >
               Transfer <ArrowRightLeft className="w-3 h-3" />
             </button>
           </div>
         </div>
 
-        {/* Card 2: Bank to Mobile Transfers (Pushed to MoMo) */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 shadow-sm flex flex-col justify-between">
+        {/* Card 2: Mobile Money Wallet Balance */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Bank ➔ Mobile Transfers</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <ArrowRightLeft className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Mobile Money</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <Smartphone className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400">{formatUGX(balances.totalBankToMobileTransferred)}</span>
+              <span className="text-xl font-black font-mono text-slate-900 dark:text-white">{formatUGX(balances.availableMobileMoneyBalance)}</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
-              {bankToMobileEntries.length} transfer(s) deducted from Bank
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+              MTN: {formatUGX(balances.availableMtnBalance)} • Airtel: {formatUGX(balances.availableAirtelBalance)}
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>MTN: {formatUGX(balances.availableMtnBalance)} | Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Transfers In: {formatUGX(balances.totalBankToMobileTransferred)}</span>
             <button 
               onClick={() => {
                 setFilterType('transfers');
                 const el = document.getElementById('cashbook-logs-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
             >
-              View Transfers
+              Transfers
             </button>
           </div>
         </div>
 
         {/* Card 3: Cashouts Taken (Inflow to Drawer) */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Cashouts Received</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
-              <Banknote className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Cashouts Taken</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <Banknote className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">{formatUGX(balances.totalCashoutsReceived)}</span>
+              <span className="text-xl font-black font-mono text-slate-900 dark:text-white">{formatUGX(balances.totalCashoutsReceived)}</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
               {cashoutEntries.length} cashout withdrawal(s) logged
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Inflow to Drawer</span>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Credited to Cash</span>
             <button 
               onClick={() => {
                 setFilterType('cashouts');
                 const el = document.getElementById('cashbook-logs-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-amber-600 dark:text-amber-400 hover:underline font-bold"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
             >
-              Filter Logs
+              Cashouts
             </button>
           </div>
         </div>
 
         {/* Card 4: Cash on Hand Drawer Balance */}
-        <div className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${
-          balances.availableCashOnHand >= 0
-            ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-            : 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800'
-        }`}>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-bold uppercase tracking-wider ${balances.availableCashOnHand >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              Cash on Hand Drawer
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              Cash on Hand
             </span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <DollarSign className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex items-baseline gap-2">
               <span className={`text-xl font-black font-mono ${balances.availableCashOnHand >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>
                 {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `-${formatUGX(Math.abs(balances.availableCashOnHand))}`}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
-              Spent in cash: <strong className="font-mono text-slate-700 dark:text-slate-300">{formatUGX(balances.totalCashSpendings)}</strong>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+              Spent: <strong className="font-mono text-slate-700 dark:text-slate-300">{formatUGX(balances.totalCashSpendings)}</strong>
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>{balances.availableCashOnHand >= 0 ? 'In pocket drawer' : 'Exceeded cashout'}</span>
-            <span className="font-bold text-slate-700 dark:text-slate-300">{cashSpendingEntries.length} cash spends</span>
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{balances.availableCashOnHand >= 0 ? 'In pocket drawer' : 'Negative balance'}</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300">{cashSpendingEntries.length} spends</span>
           </div>
         </div>
 
         {/* Card 5: Total Savings & Progress */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-emerald-500/30 dark:border-emerald-800/60 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              {isAllTime ? 'Total Savings (All Time)' : 'Savings Logged'}
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              {isAllTime ? 'Total Savings' : 'Savings Goal'}
             </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <PiggyBank className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <PiggyBank className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">{formatUGX(balances.totalSavings)}</span>
             </div>
             {!isAllTime && (
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden border border-slate-200 dark:border-slate-700/50">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden border border-slate-200 dark:border-slate-700/50">
                 <div 
                   className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(100, savingsPct)}%` }}
@@ -408,13 +404,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </div>
             )}
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-500 dark:text-slate-400 font-medium">
-              {isAllTime ? 'Accumulated Net Capital' : `Target: ${formatUGX(targetSavingsValue)}`}
+              {isAllTime ? 'Accumulated' : `Target: ${formatUGX(targetSavingsValue)}`}
             </span>
             <button 
               onClick={() => onNavigateToTab('expenses')}
-              className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 font-bold"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 font-bold cursor-pointer"
             >
               Savings Log <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
@@ -426,17 +422,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div id="cashbook-logs-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left: Financial Transactions & Cashflow Logs (7 cols) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 sm:p-6 flex flex-col justify-between">
           <div>
             {/* Title & Filter Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-emerald-500" />
-                  Financial Transactions & Cashflow Logs
+                  Financial Transactions
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Track cash inflows, Bank transfers, cashouts, direct spendings, and savings.
+                  Track cash inflows, transfers, cashouts, and spending.
                 </p>
               </div>
 
@@ -444,9 +440,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto flex-wrap">
                 <button
                   onClick={() => setFilterType('all')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'all'
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -454,9 +450,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('inflows')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'inflows'
-                      ? 'bg-emerald-600 text-white shadow-sm font-bold'
+                      ? 'bg-emerald-600 text-white shadow-xs font-bold'
                       : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                   }`}
                 >
@@ -464,9 +460,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('transfers')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'transfers'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -474,9 +470,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('cashouts')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'cashouts'
-                      ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -484,9 +480,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('direct_digital')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'direct_digital'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -494,9 +490,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('cash_spending')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'cash_spending'
-                      ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -504,9 +500,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterType('savings')}
-                  className={`px-2.5 py-1 rounded-lg transition ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     filterType === 'savings'
-                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm font-bold'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -519,46 +515,40 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             {filterType === 'inflows' ? (
               inflows.length === 0 ? (
                 <div className="py-12 text-center text-slate-500 space-y-3">
-                  <ArrowDownLeft className="w-10 h-10 text-emerald-500 mx-auto opacity-70" />
+                  <ArrowDownLeft className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
                   <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                    No cash inflows logged yet.
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                    Record money coming into your Bank, Mobile Money, or Cash on hand.
+                    No cash inflows logged for this period.
                   </p>
                   <button
                     onClick={onOpenInflowModal}
-                    className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl shadow-sm hover:bg-emerald-400 transition"
+                    className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs hover:bg-emerald-500 transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[3]" />
                     Log First Inflow
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
                   {inflows.map((inf) => (
                     <div
                       key={inf.id}
-                      className="flex items-start gap-3 p-3.5 rounded-xl border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/50 hover:border-emerald-400 transition"
+                      className="flex items-start gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 transition"
                     >
-                      <div className="p-2 rounded-xl bg-emerald-500 text-slate-950 shrink-0 font-bold">
-                        <ArrowDownLeft className="w-4 h-4 stroke-[3]" />
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 font-bold">
+                        <ArrowDownLeft className="w-4 h-4 stroke-[2.5]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-xs sm:text-sm truncate text-slate-900 dark:text-slate-100">
                             {inf.title}
                           </span>
-                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
-                            INFLOW (+)
-                          </span>
-                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             {inf.category}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                          <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                            Destination: {inf.destinationAccount}
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            To: {inf.destinationAccount.replace('_', ' ')}
                           </span>
                           {(inf.payerSource || (inf as Record<string, unknown>).sourceName) && (
                             <span>• From: {inf.payerSource || (inf as Record<string, unknown>).sourceName as string}</span>
@@ -573,15 +563,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           <span className="font-black text-sm text-emerald-600 dark:text-emerald-400 block">
                             +{formatUGX(inf.amount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 block">
-                            Credited to {inf.destinationAccount.split(' ')[0]}
-                          </span>
                         </div>
-                        <div className="flex items-center gap-0.5 border-l border-emerald-200 dark:border-emerald-800 pl-1 ml-1">
+                        <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-800 pl-1 ml-1">
                           {onEditInflow && (
                             <button
                               onClick={() => onEditInflow(inf)}
-                              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded transition"
+                              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded transition cursor-pointer"
                               title="Edit Inflow"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -590,7 +577,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           {onDeleteInflow && (
                             <button
                               onClick={() => onDeleteInflow(inf.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition"
+                              className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition cursor-pointer"
                               title="Delete Inflow"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -604,27 +591,23 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               )
             ) : displayedExpenses.length === 0 ? (
               <div className="py-12 text-center text-slate-500 space-y-3">
-                <Receipt className="w-10 h-10 text-emerald-500 mx-auto opacity-70" />
+                <Receipt className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
                 <p className="font-bold text-sm text-slate-800 dark:text-slate-200">
                   {expenses.length > 0
                     ? `No entries matching the "${filterType}" filter.`
-                    : 'Your cashbook is clean! No transactions recorded yet.'}
+                    : 'No transactions recorded for this period.'}
                 </p>
                 {expenses.length > 0 && filterType !== 'all' ? (
                   <button
                     onClick={() => setFilterType('all')}
-                    className="px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg hover:underline"
+                    className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg hover:underline cursor-pointer"
                   >
                     View All Entries
                   </button>
-                ) : (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                    Click the buttons below to log an inflow, transfer money from bank to mobile, log a cashout, or add an expense.
-                  </p>
-                )}
+                ) : null}
               </div>
             ) : (
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
                 {displayedExpenses.slice(0, 10).map((exp) => {
                   const isTransfer = isBankToMobileTransfer(exp);
                   const isSelfTransfer = isSelfBankToMobileTransfer(exp);
@@ -634,33 +617,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   return (
                     <div
                       key={exp.id}
-                      className={`group flex items-start gap-3 p-3.5 rounded-xl border transition ${
-                        isThirdPartyTransfer
-                          ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/40 hover:border-rose-300'
-                          : isSelfTransfer
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200/90 dark:border-indigo-900/60 hover:border-indigo-400'
-                          : isW
-                          ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/40 hover:border-amber-300'
-                          : exp.isSavings
-                          ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40 hover:border-emerald-300'
-                          : isDirect
-                          ? 'bg-indigo-50/30 dark:bg-indigo-950/20 border-indigo-200/80 dark:border-indigo-900/40 hover:border-indigo-300'
-                          : 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                      }`}
+                      className="group flex items-start gap-3 p-3 rounded-xl border bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition"
                     >
-                      <div className={`mt-0.5 p-2 rounded-xl border shrink-0 ${
-                        isThirdPartyTransfer
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                          : isSelfTransfer
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                          : isW
-                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-                          : exp.isSavings
-                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                          : isDirect
-                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'
-                      }`}>
+                      <div className="mt-0.5 p-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shrink-0">
                         {isThirdPartyTransfer ? <Users className="w-4 h-4" /> : isSelfTransfer ? <ArrowRightLeft className="w-4 h-4" /> : isW ? <Banknote className="w-4 h-4" /> : exp.isSavings ? <PiggyBank className="w-4 h-4" /> : isDirect ? <Smartphone className="w-4 h-4" /> : <Receipt className="w-4 h-4" />}
                       </div>
 
@@ -670,37 +629,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             {exp.title}
                           </span>
 
-                          {isSelfTransfer ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider shadow-xs">
-                              BANK ➔ MOMO (SELF)
-                            </span>
-                          ) : isThirdPartyTransfer ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white uppercase tracking-wider shadow-xs">
-                              TRANSFER EXPENSE
-                            </span>
-                          ) : isW ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wider">
-                              CASHOUT INFLOW
-                            </span>
-                          ) : exp.isSavings ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 uppercase tracking-wider">
-                              SAVINGS DEPOSIT
-                            </span>
-                          ) : isDirect ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-500 text-white uppercase tracking-wider">
-                              MOMO / BANK DIRECT
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 uppercase tracking-wider">
-                              CASH SPEND
-                            </span>
-                          )}
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                            {isSelfTransfer ? 'TRANSFER (SELF)' : isThirdPartyTransfer ? 'TRANSFER (EXPENSE)' : isW ? 'CASHOUT' : exp.isSavings ? 'SAVINGS' : exp.category}
+                          </span>
 
-                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase ${
-                            exp.purpose === 'work'
-                              ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          }`}>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
                             {exp.purpose}
                           </span>
                         </div>
@@ -708,11 +641,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
                           {isThirdPartyTransfer ? (
                             <span className="font-semibold text-rose-600 dark:text-rose-400">
-                              Recipient: {exp.recipientName || 'Third Party'} ({exp.recipientMobileNetwork || 'MoMo'})
+                              Recipient: {exp.recipientName || 'Third Party'}
                             </span>
                           ) : isSelfTransfer && exp.sourceBank ? (
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                              {exp.sourceBank} ➔ {exp.recipientMobileNetwork || 'MoMo Wallet'}
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                              {exp.sourceBank.split(' ')[0]} ➔ {exp.recipientMobileNetwork?.split(' ')[0] || 'MoMo'}
                             </span>
                           ) : (
                             <span className="font-medium">{exp.category}</span>
@@ -724,16 +657,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           {exp.taxAmount > 0 && (
                             <>
                               <span>•</span>
-                              <span className="text-amber-600 dark:text-amber-400 font-mono font-semibold">
-                                {isTransfer ? 'Transfer Fee: ' : 'Tax: '}{formatUGX(exp.taxAmount)}
-                              </span>
-                            </>
-                          )}
-                          {exp.recipientPhone && (
-                            <>
-                              <span>•</span>
-                              <span className="font-mono text-slate-600 dark:text-slate-300">
-                                To: {exp.recipientPhone}
+                              <span className="text-slate-600 dark:text-slate-400 font-mono">
+                                Fee: {formatUGX(exp.taxAmount)}
                               </span>
                             </>
                           )}
@@ -746,31 +671,28 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             isThirdPartyTransfer
                               ? 'text-rose-600 dark:text-rose-400'
                               : isSelfTransfer
-                              ? 'text-indigo-600 dark:text-indigo-400'
+                              ? 'text-slate-900 dark:text-white'
                               : isW
-                              ? 'text-amber-600 dark:text-amber-400'
+                              ? 'text-slate-900 dark:text-white'
                               : exp.isSavings
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : 'text-slate-900 dark:text-slate-100'
                           }`}>
                             {formatUGX(exp.totalAmount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 block">
-                            {isTransfer ? 'Deducted from Bank' : `Sub: ${formatUGX(exp.amount)}`}
-                          </span>
                         </div>
 
                         <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-800 pl-1 ml-1">
                           <button
                             onClick={() => onEditExpense(exp)}
-                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition"
+                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition cursor-pointer"
                             title="Edit Transaction"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => onDeleteExpense(exp.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded transition"
+                            className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition cursor-pointer"
                             title="Delete Transaction"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -787,68 +709,68 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           {/* Quick Action Buttons */}
           <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Record cash inflow, transfer, cashout, or daily expense
+              Quick transaction logging
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={onOpenInflowModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
               >
-                <ArrowDownLeft className="w-3.5 h-3.5 stroke-[3]" />
+                <ArrowDownLeft className="w-3.5 h-3.5 stroke-[2.5]" />
                 Log Inflow
               </button>
               <button
                 onClick={() => onOpenExpenseModal('transfer')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
-                Transfer Bank ➔ Mobile
+                Transfer
               </button>
               <button
                 onClick={() => onOpenExpenseModal('spending')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                Log Entry
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                Log Expense
               </button>
             </div>
           </div>
         </div>
 
         {/* Right: Cashbook Balance Reconciliation & Flow Engine (5 cols) */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 sm:p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-indigo-500" />
-                Ledger Flow Reconciliation
+                <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
+                Ledger Flow Statement
               </h2>
               <button
                 onClick={() => onNavigateToTab('analytics')}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-500 flex items-center gap-1 cursor-pointer"
               >
                 Full Statement <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="space-y-2.5 text-xs font-mono">
-              {/* 1. Net Income Take-Home into Bank */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
+            <div className="space-y-2 text-xs font-mono">
+              {/* 1. Net Income Take-Home */}
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block font-sans">Net Income Take-Home</span>
-                  <span className="text-[10px] text-slate-500 font-sans">Salary less tax (Initial Bank Credit)</span>
+                  <span className="text-[10px] text-slate-500 font-sans">Salary less tax</span>
                 </div>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                <span className="font-bold text-slate-900 dark:text-white text-sm">
                   {formatUGX(balances.netIncome)}
                 </span>
               </div>
 
               {/* 2. Additional Inflows Tracked */}
               {balances.totalInflowsLogged > 0 && (
-                <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex justify-between items-center">
+                <div className="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/80 dark:border-emerald-900/40 flex justify-between items-center">
                   <div>
                     <span className="font-bold text-emerald-950 dark:text-emerald-200 block font-sans">+ Cash Inflows Recorded</span>
-                    <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-sans">Salary, Client, MoMo, Gift, Sales</span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-sans">Salary, Client, MoMo, Sales</span>
                   </div>
                   <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
                     +{formatUGX(balances.totalInflowsLogged)}
@@ -856,77 +778,70 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </div>
               )}
 
-              {/* 3. Less Bank to Mobile Money Transfers */}
-              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800/60 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-indigo-950 dark:text-indigo-200 block font-sans">Less Bank ➔ Mobile Transfers</span>
-                  <span className="text-[10px] text-indigo-800 dark:text-indigo-300 font-sans">Deducted from Available Bank Money</span>
+              {/* 3. Debt Repayments Collected */}
+              {balances.totalDebtRepaymentsReceived > 0 && (
+                <div className="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/80 dark:border-emerald-900/40 flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-emerald-950 dark:text-emerald-200 block font-sans">+ Loan Collections</span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-sans">Repayments received on loans lent</span>
+                  </div>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                    +{formatUGX(balances.totalDebtRepaymentsReceived)}
+                  </span>
                 </div>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
-                  -{formatUGX(balances.totalBankToMobileTransferred)}
-                </span>
-              </div>
+              )}
 
-              {/* 4. Available in Bank Account */}
-              <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex justify-between items-center">
+              {/* 4. Bank Account Balance */}
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
                 <div>
-                  <span className="font-bold text-emerald-900 dark:text-emerald-300 block font-sans">1. Available in Bank Account</span>
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-sans">Bank balance after all transfers out</span>
+                  <span className="font-bold text-slate-900 dark:text-white block font-sans">1. Bank Account Balance</span>
+                  <span className="text-[10px] text-slate-500 font-sans">After transfers and card spending</span>
                 </div>
-                <span className="font-black text-emerald-700 dark:text-emerald-300 text-sm">
+                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
                   {formatUGX(balances.availableBankBalance)}
                 </span>
               </div>
 
               {/* 5. Mobile Money Wallet Pool */}
-              <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-800/50 flex justify-between items-center">
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
                 <div>
-                  <span className="font-bold text-indigo-900 dark:text-indigo-300 block font-sans">2. Mobile Money Wallet</span>
-                  <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-sans">Transfers in + Inflows minus direct bills</span>
+                  <span className="font-bold text-slate-900 dark:text-white block font-sans">2. Mobile Money Wallet</span>
+                  <span className="text-[10px] text-slate-500 font-sans">MTN + Airtel wallets</span>
                 </div>
-                <span className="font-black text-indigo-600 dark:text-indigo-400 text-sm">
+                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
                   {formatUGX(balances.availableMobileMoneyBalance)}
                 </span>
               </div>
 
-              {/* 6. Cash Inflow into Drawer */}
-              <div className="p-3 bg-amber-50/60 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/60 flex justify-between items-center">
+              {/* 6. Cash on Hand Drawer */}
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 flex justify-between items-center">
                 <div>
-                  <span className="font-bold text-amber-900 dark:text-amber-300 block font-sans">Cashouts + Cash Inflows</span>
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-sans">Available physical cash</span>
+                  <span className="font-bold text-slate-900 dark:text-white block font-sans">3. Cash on Hand Drawer</span>
+                  <span className="text-[10px] text-slate-500 font-sans">Cashouts minus cash spends</span>
                 </div>
-                <span className="font-black text-amber-700 dark:text-amber-300 text-sm">
-                  +{formatUGX(balances.totalCashoutsReceived + balances.totalCashInflows)}
-                </span>
-              </div>
-
-              {/* 7. Less Cash Spendings */}
-              <div className="p-3 bg-rose-50/60 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800/60 flex justify-between items-center">
-                <div>
-                  <span className="font-bold text-rose-900 dark:text-rose-300 block font-sans">Less Cash Spendings</span>
-                  <span className="text-[10px] text-rose-700 dark:text-rose-400 font-sans">Deducted from pocket drawer</span>
-                </div>
-                <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
-                  -{formatUGX(balances.totalCashSpendings)}
-                </span>
-              </div>
-
-              {/* 8. Closing Cash on Hand Drawer */}
-              <div className="p-3 bg-slate-900 text-white rounded-xl border border-slate-800 flex justify-between items-center shadow-sm">
-                <div>
-                  <span className="font-extrabold text-white block font-sans">3. Cash on Hand Drawer</span>
-                  <span className="text-[10px] text-slate-400 font-sans">Remaining physical cash in pocket</span>
-                </div>
-                <span className="font-black text-emerald-400 text-sm">
+                <span className={`font-black text-sm ${balances.availableCashOnHand >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {formatUGX(balances.availableCashOnHand)}
                 </span>
               </div>
 
-              {/* 9. Combined Total Net Worth */}
-              <div className="p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl border border-indigo-800/60 flex justify-between items-center shadow-md">
+              {/* 7. Debt Repayments Paid */}
+              {balances.totalDebtRepaymentsPaid > 0 && (
+                <div className="p-2.5 bg-rose-50/60 dark:bg-rose-950/20 rounded-xl border border-rose-200/80 dark:border-rose-900/40 flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-rose-950 dark:text-rose-200 block font-sans">Less Debt Repayments Paid</span>
+                    <span className="text-[10px] text-rose-700 dark:text-rose-400 font-sans">Deducted from accounts</span>
+                  </div>
+                  <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
+                    -{formatUGX(balances.totalDebtRepaymentsPaid)}
+                  </span>
+                </div>
+              )}
+
+              {/* 8. Combined Total Net Worth */}
+              <div className="p-3 bg-slate-900 dark:bg-slate-950 text-white rounded-xl border border-slate-800 flex justify-between items-center shadow-xs">
                 <div>
-                  <span className="font-extrabold text-indigo-300 block font-sans">Total Liquid Net Worth</span>
-                  <span className="text-[10px] text-slate-400 font-sans">Bank + MoMo Wallet + Cash Drawer</span>
+                  <span className="font-bold text-slate-200 block font-sans text-xs uppercase tracking-wider">Total Liquid Net Worth</span>
+                  <span className="text-[10px] text-slate-400 font-sans">Bank + MoMo + Cash Drawer</span>
                 </div>
                 <span className="font-black text-emerald-400 text-base">
                   {formatUGX(balances.totalCombinedNetWorth)}
@@ -937,14 +852,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
           <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              View comprehensive cashflow statements
+              Comprehensive analytics
             </span>
             <button
               onClick={() => onNavigateToTab('analytics')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              Monthly Statements
+              Reports & Statements
             </button>
           </div>
         </div>

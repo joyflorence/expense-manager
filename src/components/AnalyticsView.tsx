@@ -202,14 +202,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Card 1: Available Money in Bank (Deducted by transfers) */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                1. Available in Bank
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                1. Bank Balance
               </span>
-              <Landmark className="w-4 h-4 text-emerald-500" />
+              <Landmark className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-xl font-extrabold font-mono text-slate-900 dark:text-white mt-1">
+            <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
               {formatUGX(balances.availableBankBalance)}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
@@ -218,54 +218,50 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </div>
 
           {/* Card 2: Mobile Money Wallet */}
-          <div className="p-4 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-indigo-800 dark:text-indigo-400 uppercase tracking-wider">
-                2. Mobile Money Wallet
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                2. Mobile Money
               </span>
-              <Smartphone className="w-4 h-4 text-indigo-500" />
+              <Smartphone className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-xl font-extrabold font-mono text-indigo-600 dark:text-indigo-400 mt-1">
+            <div className="text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
               {formatUGX(balances.availableMobileMoneyBalance)}
             </div>
-            <div className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80 mt-1">
+            <div className="text-[11px] text-slate-500 mt-1">
               +{formatUGX(balances.totalBankToMobileReceivedInMoMo)} received from Bank
             </div>
           </div>
 
           {/* Card 3: Cashouts Inflow */}
-          <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
-                3. Cashouts to Pocket
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                3. Cashouts Received
               </span>
-              <Banknote className="w-4 h-4 text-amber-500" />
+              <Banknote className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-xl font-extrabold font-mono text-amber-900 dark:text-amber-300 mt-1">
+            <div className="text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
               {formatUGX(balances.totalCashoutsReceived)}
             </div>
-            <div className="text-[11px] text-amber-800/80 dark:text-amber-400/80 mt-1 flex gap-2">
-              <span>📱 MoMo: {formatUGX(momoCashouts)}</span>
-              <span>💳 Card: {formatUGX(cardCashouts)}</span>
+            <div className="text-[11px] text-slate-500 mt-1 flex gap-2">
+              <span>MoMo: {formatUGX(momoCashouts)}</span>
+              <span>Card: {formatUGX(cardCashouts)}</span>
             </div>
           </div>
 
           {/* Card 4: Closing Cash on Hand */}
-          <div className={`p-4 rounded-xl border ${
-            balances.availableCashOnHand >= 0
-              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
-              : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
-          }`}>
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider">
-                4. Cash on Hand Drawer
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                4. Cash on Hand
               </span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-xl font-extrabold font-mono mt-1">
-              {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `Deficit -${formatUGX(Math.abs(balances.availableCashOnHand))}`}
+            <div className={`text-xl font-black font-mono mt-1 ${balances.availableCashOnHand >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `-${formatUGX(Math.abs(balances.availableCashOnHand))}`}
             </div>
-            <div className="text-[11px] mt-1 opacity-80">
+            <div className="text-[11px] text-slate-500 mt-1">
               {balances.availableCashOnHand >= 0 ? 'Remaining in pocket drawer' : 'Spending exceeded cashouts'}
             </div>
           </div>

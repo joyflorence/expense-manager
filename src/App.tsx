@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut, ArrowLeft, RotateCcw } from 'lucide-react';
-import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod, AccountType } from './types';
+import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod, AccountType, DateFilterState, DateFilterMode } from './types';
 import { INITIAL_EXPENSES, INITIAL_BUDGETS, INITIAL_DEBTS, INITIAL_INFLOWS } from './data/mockData';
 import { Navbar, ViewTab } from './components/Navbar';
 import { OverviewView } from './components/OverviewView';
@@ -52,9 +52,29 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    return localStorage.getItem('omnitrack_selected_month') || 'all';
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const [dateFilter, setDateFilter] = useState<DateFilterState>(() => {
+    const savedMonth = localStorage.getItem('omnitrack_selected_month') || 'all';
+    return {
+      mode: savedMonth === 'all' ? 'all' : 'month',
+      selectedMonth: savedMonth === 'all' ? '2026-08' : savedMonth,
+      selectedDay: todayStr,
+      startDate: `${todayStr.slice(0, 7)}-01`,
+      endDate: todayStr,
+    };
   });
+
+  const handleDateFilterChange = (filter: DateFilterState) => {
+    setDateFilter(filter);
+    if (filter.mode === 'all') {
+      localStorage.setItem('omnitrack_selected_month', 'all');
+    } else {
+      localStorage.setItem('omnitrack_selected_month', filter.selectedMonth);
+    }
+  };
+
+  const selectedMonth = dateFilter.mode === 'all' ? 'all' : dateFilter.selectedMonth;
 
   // Modal states
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -232,26 +252,46 @@ export default function App() {
     ).filter((m) => m && m.length === 7 && m !== 'all').sort().reverse(),
   ];
 
-  // Current month filtered data
-  const currentMonthExpenses = selectedMonth === 'all'
-    ? expenses
-    : expenses.filter((e) => {
-        const d = e.date;
-        if (!d) return true;
-        return d.slice(0, 7) === selectedMonth;
-      });
+  // Week range calculator for 'this_week' filter mode
+  const getWeekRange = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const mon = new Date(d.setDate(diff));
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return {
+      start: mon.toISOString().slice(0, 10),
+      end: sun.toISOString().slice(0, 10),
+    };
+  };
 
-  const currentMonthInflows = selectedMonth === 'all'
-    ? inflows
-    : inflows.filter((i) => {
-        const d = i.date;
-        if (!d) return true;
-        return d.slice(0, 7) === selectedMonth;
-      });
+  // Date filtering logic based on dateFilter.mode
+  const filterByDate = (itemDate?: string): boolean => {
+    if (!itemDate) return true;
+    if (dateFilter.mode === 'all') return true;
+    if (dateFilter.mode === 'month') return itemDate.slice(0, 7) === dateFilter.selectedMonth;
+    if (dateFilter.mode === 'day') return itemDate === dateFilter.selectedDay;
+    if (dateFilter.mode === 'today') return itemDate === todayStr;
+    if (dateFilter.mode === 'range') {
+      const start = dateFilter.startDate || '1970-01-01';
+      const end = dateFilter.endDate || '2099-12-31';
+      return itemDate >= start && itemDate <= end;
+    }
+    if (dateFilter.mode === 'this_week') {
+      const { start, end } = getWeekRange(todayStr);
+      return itemDate >= start && itemDate <= end;
+    }
+    return true;
+  };
+
+  // Filtered dataset for active date scope
+  const currentFilteredExpenses = expenses.filter((e) => filterByDate(e.date));
+  const currentFilteredInflows = inflows.filter((i) => filterByDate(i.date));
 
   const currentBudget =
-    budgets.find((b) => b.month === selectedMonth) || {
-      month: selectedMonth === 'all' ? '2026-08' : selectedMonth,
+    budgets.find((b) => b.month === dateFilter.selectedMonth) || {
+      month: dateFilter.selectedMonth || '2026-08',
       workBudget: 200000,
       personalBudget: 200000,
       monthlySalary: 500000,
@@ -574,8 +614,8 @@ export default function App() {
       <Navbar
         currentTab={currentTab}
         onTabChange={setCurrentTab}
-        selectedMonth={selectedMonth}
-        onMonthChange={setSelectedMonth}
+        dateFilter={dateFilter}
+        onDateFilterChange={handleDateFilterChange}
         availableMonths={availableMonths}
         onOpenExpenseModal={() => {
           setExpenseToEdit(null);
@@ -606,8 +646,8 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">
         {currentTab === 'overview' && (
           <OverviewView
-            expenses={currentMonthExpenses}
-            inflows={currentMonthInflows}
+            expenses={currentFilteredExpenses}
+            inflows={currentFilteredInflows}
             debts={debts}
             budget={currentBudget}
             selectedMonth={selectedMonth}
@@ -636,7 +676,7 @@ export default function App() {
 
         {currentTab === 'expenses' && (
           <ExpenseView
-            expenses={currentMonthExpenses}
+            expenses={currentFilteredExpenses}
             onAddExpense={() => {
               setExpenseToEdit(null);
               setExpenseModalInitialMode('spending');
@@ -678,8 +718,8 @@ export default function App() {
 
         {currentTab === 'analytics' && (
           <AnalyticsView
-            expenses={currentMonthExpenses}
-            inflows={currentMonthInflows}
+            expenses={currentFilteredExpenses}
+            inflows={currentFilteredInflows}
             debts={debts}
             budget={currentBudget}
             selectedMonth={selectedMonth}
