@@ -11,6 +11,8 @@ import {
   isDirectDigitalEntry,
   isCashOnHandSpending,
   isSavingsEntry,
+  getExpenseSourceAccount,
+  getExpenseDestinationAccount,
 } from '../utils/cashbookHelpers';
 import { 
   DollarSign, 
@@ -421,6 +423,246 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
       </div>
 
+      {/* ========================================================================= */}
+      {/* 4-CHANNEL LIQUIDITY & DEBT REPAYMENT FLOW ENGINE AUDIT TRACE */}
+      {/* ========================================================================= */}
+      <div className="bg-slate-900 dark:bg-slate-950 text-white p-5 rounded-2xl border border-slate-800 shadow-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+          <div>
+            <h2 className="text-sm font-extrabold flex items-center gap-2 text-white">
+              <ArrowRightLeft className="w-4 h-4 text-emerald-400" />
+              <span>Multi-Channel Liquidity & Transfer Trace</span>
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Live audit breakdown of money movement across Bank, Airtel, MTN, Cash Drawer, and Debt Deductions.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onOpenExpenseModal('transfer')}
+              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl transition active:scale-95 cursor-pointer flex items-center gap-1 shadow-xs"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span>Transfer Funds</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+          {/* Channel 1: Bank Account */}
+          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between font-sans pb-2 border-b border-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-slate-200">
+                <Landmark className="w-4 h-4 text-emerald-400" />
+                🏦 Bank Account
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                Main
+              </span>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Baseline/Inflows:</span>
+                <span className="text-emerald-400 font-bold">+{formatUGX(balances.totalBankInflows)}</span>
+              </div>
+              {balances.bankDebtRepaymentsReceived > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Debt Recovered In:</span>
+                  <span className="text-emerald-400">+{formatUGX(balances.bankDebtRepaymentsReceived)}</span>
+                </div>
+              )}
+              {balances.bankToAirtel > 0 && (
+                <div className="flex justify-between text-rose-400">
+                  <span>➔ Transferred to Airtel:</span>
+                  <span>-{formatUGX(balances.bankToAirtel)}</span>
+                </div>
+              )}
+              {balances.bankToMtn > 0 && (
+                <div className="flex justify-between text-rose-400">
+                  <span>➔ Transferred to MTN:</span>
+                  <span>-{formatUGX(balances.bankToMtn)}</span>
+                </div>
+              )}
+              {balances.bankDebtRepaymentsPaid > 0 && (
+                <div className="flex justify-between text-rose-400">
+                  <span>➔ Debt Repaid:</span>
+                  <span>-{formatUGX(balances.bankDebtRepaymentsPaid)}</span>
+                </div>
+              )}
+              {(balances.directBankSpendings > 0 || balances.atmCashouts > 0) && (
+                <div className="flex justify-between text-slate-400">
+                  <span>➔ Card & ATM Out:</span>
+                  <span>-{formatUGX(balances.directBankSpendings + balances.atmCashouts)}</span>
+                </div>
+              )}
+            </div>
+            <div className="pt-2 border-t border-slate-700 flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-sans font-semibold">Available Bank:</span>
+              <span className="font-bold text-white text-sm">{formatUGX(balances.availableBankBalance)}</span>
+            </div>
+          </div>
+
+          {/* Channel 2: Airtel Money */}
+          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between font-sans pb-2 border-b border-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-rose-300">
+                <Smartphone className="w-4 h-4 text-rose-400" />
+                🔴 Airtel Money
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                *185#
+              </span>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-300">
+              {balances.totalAirtelInflows > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Direct Inflows:</span>
+                  <span className="text-emerald-400">+{formatUGX(balances.totalAirtelInflows)}</span>
+                </div>
+              )}
+              {balances.bankToAirtel > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>+ From Bank:</span>
+                  <span>+{formatUGX(balances.bankToAirtel)}</span>
+                </div>
+              )}
+              {balances.mtnToAirtelPrincipal > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>+ From MTN MoMo:</span>
+                  <span>+{formatUGX(balances.mtnToAirtelPrincipal)}</span>
+                </div>
+              )}
+              {balances.airtelToMtnTotalDeducted > 0 && (
+                <div className="flex justify-between text-rose-400">
+                  <span>➔ Transferred to MTN:</span>
+                  <span>-{formatUGX(balances.airtelToMtnTotalDeducted)}</span>
+                </div>
+              )}
+              {balances.airtelDebtRepaymentsPaid > 0 && (
+                <div className="flex justify-between text-rose-400 font-bold">
+                  <span>➔ Debt Repaid:</span>
+                  <span>-{formatUGX(balances.airtelDebtRepaymentsPaid)}</span>
+                </div>
+              )}
+              {(balances.airtelSpent > 0 || balances.airtelCashouts > 0) && (
+                <div className="flex justify-between text-slate-400">
+                  <span>➔ Spends & Cashouts:</span>
+                  <span>-{formatUGX(balances.airtelSpent + balances.airtelCashouts)}</span>
+                </div>
+              )}
+            </div>
+            <div className="pt-2 border-t border-slate-700 flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-sans font-semibold">Available Airtel:</span>
+              <span className={`font-bold text-sm ${balances.availableAirtelBalance >= 0 ? 'text-rose-400' : 'text-rose-500'}`}>
+                {balances.availableAirtelBalance >= 0 ? formatUGX(balances.availableAirtelBalance) : `-${formatUGX(Math.abs(balances.availableAirtelBalance))}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Channel 3: MTN Mobile Money */}
+          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between font-sans pb-2 border-b border-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-amber-300">
+                <Smartphone className="w-4 h-4 text-amber-400" />
+                📱 MTN MoMo
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                *165#
+              </span>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-300">
+              {balances.totalMtnInflows > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Direct Inflows:</span>
+                  <span className="text-emerald-400">+{formatUGX(balances.totalMtnInflows)}</span>
+                </div>
+              )}
+              {balances.bankToMtn > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>+ From Bank:</span>
+                  <span>+{formatUGX(balances.bankToMtn)}</span>
+                </div>
+              )}
+              {balances.airtelToMtnPrincipal > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>+ From Airtel Money:</span>
+                  <span>+{formatUGX(balances.airtelToMtnPrincipal)}</span>
+                </div>
+              )}
+              {balances.mtnToAirtelTotalDeducted > 0 && (
+                <div className="flex justify-between text-rose-400">
+                  <span>➔ Transferred to Airtel:</span>
+                  <span>-{formatUGX(balances.mtnToAirtelTotalDeducted)}</span>
+                </div>
+              )}
+              {balances.mtnDebtRepaymentsPaid > 0 && (
+                <div className="flex justify-between text-rose-400 font-bold">
+                  <span>➔ Debt Repaid:</span>
+                  <span>-{formatUGX(balances.mtnDebtRepaymentsPaid)}</span>
+                </div>
+              )}
+              {(balances.mtnSpent > 0 || balances.mtnCashouts > 0) && (
+                <div className="flex justify-between text-slate-400">
+                  <span>➔ Spends & Cashouts:</span>
+                  <span>-{formatUGX(balances.mtnSpent + balances.mtnCashouts)}</span>
+                </div>
+              )}
+            </div>
+            <div className="pt-2 border-t border-slate-700 flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-sans font-semibold">Available MTN:</span>
+              <span className={`font-bold text-sm ${balances.availableMtnBalance >= 0 ? 'text-amber-400' : 'text-rose-500'}`}>
+                {balances.availableMtnBalance >= 0 ? formatUGX(balances.availableMtnBalance) : `-${formatUGX(Math.abs(balances.availableMtnBalance))}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Channel 4: Cash on Hand Drawer */}
+          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/80 flex flex-col justify-between space-y-2">
+            <div className="flex items-center justify-between font-sans pb-2 border-b border-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-slate-200">
+                <Banknote className="w-4 h-4 text-emerald-400" />
+                💵 Cash on Hand
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
+                Drawer
+              </span>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-300">
+              {balances.totalCashInflows > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Direct Inflows:</span>
+                  <span className="text-emerald-400">+{formatUGX(balances.totalCashInflows)}</span>
+                </div>
+              )}
+              {balances.totalCashoutsReceived > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>+ Cashouts Received:</span>
+                  <span>+{formatUGX(balances.totalCashoutsReceived)}</span>
+                </div>
+              )}
+              {balances.cashDebtRepaymentsPaid > 0 && (
+                <div className="flex justify-between text-rose-400 font-bold">
+                  <span>➔ Debt Repaid:</span>
+                  <span>-{formatUGX(balances.cashDebtRepaymentsPaid)}</span>
+                </div>
+              )}
+              {balances.totalCashSpendings > 0 && (
+                <div className="flex justify-between text-slate-400">
+                  <span>➔ Cash Spent:</span>
+                  <span>-{formatUGX(balances.totalCashSpendings)}</span>
+                </div>
+              )}
+            </div>
+            <div className="pt-2 border-t border-slate-700 flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-sans font-semibold">Available Cash:</span>
+              <span className={`font-bold text-sm ${balances.availableCashOnHand >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+                {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `-${formatUGX(Math.abs(balances.availableCashOnHand))}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main 2-Column Section: Financial Logs & Cashflow Breakdown */}
       <div id="cashbook-logs-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -642,17 +884,42 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                          {isThirdPartyTransfer ? (
-                            <span className="font-semibold text-rose-600 dark:text-rose-400">
-                              Recipient: {exp.recipientName || 'Third Party'}
-                            </span>
-                          ) : isSelfTransfer && exp.sourceBank ? (
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              {exp.sourceBank.split(' ')[0]} ➔ {exp.recipientMobileNetwork?.split(' ')[0] || 'MoMo'}
-                            </span>
-                          ) : (
-                            <span className="font-medium">{exp.category}</span>
-                          )}
+                          {(() => {
+                            const srcAcct = getExpenseSourceAccount(exp);
+                            const destAcct = getExpenseDestinationAccount(exp);
+                            const srcLabel = srcAcct === 'bank_account'
+                              ? (exp.sourceBank ? exp.sourceBank.split(' ')[0] : '🏦 Bank')
+                              : srcAcct === 'airtel_mobile_money'
+                              ? '🔴 Airtel Money'
+                              : srcAcct === 'cash_on_hand'
+                              ? '💵 Cash'
+                              : '📱 MTN MoMo';
+                            const destLabel = destAcct === 'bank_account'
+                              ? (exp.sourceBank ? exp.sourceBank.split(' ')[0] : '🏦 Bank')
+                              : destAcct === 'airtel_mobile_money'
+                              ? '🔴 Airtel Money'
+                              : '📱 MTN MoMo';
+
+                            if (isThirdPartyTransfer) {
+                              return (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {srcLabel} ➔ To: {exp.recipientName || 'Third Party'}
+                                </span>
+                              );
+                            }
+                            if (isSelfTransfer) {
+                              return (
+                                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                  {srcLabel} ➔ {destLabel}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {srcLabel} • {exp.category}
+                              </span>
+                            );
+                          })()}
                           <span>•</span>
                           <span>{exp.paymentMethod}</span>
                           <span>•</span>

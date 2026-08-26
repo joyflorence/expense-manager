@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { AccountType, Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
 import { formatUGX } from '../utils/format';
-import { isBankToMobileTransfer, isSelfBankToMobileTransfer, isThirdPartyTransferExpense, isWithdrawalEntry } from '../utils/cashbookHelpers';
+import {
+  isBankToMobileTransfer,
+  isSelfBankToMobileTransfer,
+  isThirdPartyTransferExpense,
+  isWithdrawalEntry,
+  getExpenseSourceAccount,
+  getExpenseDestinationAccount,
+} from '../utils/cashbookHelpers';
 import { 
   Receipt, 
   Plus, 
@@ -350,22 +357,46 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                         {exp.title}
                       </div>
                       {isThirdPartyTransferExpense(exp) ? (
-                        <div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1 mt-0.5">
-                          <Users className="w-3 h-3" />
-                          <span>Recipient: {exp.recipientName || 'Third Party'}</span>
-                          {exp.recipientPhone && (
-                            <span className="text-slate-400 font-normal">({exp.recipientPhone})</span>
-                          )}
-                        </div>
-                      ) : isBankToMobileTransfer(exp) ? (
-                        <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 mt-0.5">
-                          <Landmark className="w-3 h-3" />
-                          <span>{exp.sourceBank || 'Bank'} ➔ {exp.recipientMobileNetwork || 'Mobile Money'}</span>
-                          {exp.recipientPhone && (
-                            <span className="text-slate-400 font-normal">({exp.recipientPhone})</span>
-                          )}
-                        </div>
-                      ) : null}
+                      {(() => {
+                        const srcAcct = getExpenseSourceAccount(exp);
+                        const destAcct = getExpenseDestinationAccount(exp);
+                        const srcLabel = srcAcct === 'bank_account'
+                          ? (exp.sourceBank ? exp.sourceBank.split(' ')[0] : 'Bank')
+                          : srcAcct === 'airtel_mobile_money'
+                          ? 'Airtel Money'
+                          : srcAcct === 'cash_on_hand'
+                          ? 'Cash on Hand'
+                          : 'MTN MoMo';
+                        const destLabel = destAcct === 'bank_account'
+                          ? (exp.sourceBank ? exp.sourceBank.split(' ')[0] : 'Bank')
+                          : destAcct === 'airtel_mobile_money'
+                          ? 'Airtel Money'
+                          : 'MTN MoMo';
+
+                        if (isThirdPartyTransferExpense(exp)) {
+                          return (
+                            <div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1 mt-0.5">
+                              <Users className="w-3 h-3" />
+                              <span>{srcLabel} ➔ To: {exp.recipientName || 'Third Party'}</span>
+                              {exp.recipientPhone && (
+                                <span className="text-slate-400 font-normal">({exp.recipientPhone})</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        if (isSelfBankToMobileTransfer(exp)) {
+                          return (
+                            <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 mt-0.5">
+                              <ArrowRightLeft className="w-3 h-3" />
+                              <span>{srcLabel} ➔ {destLabel}</span>
+                              {exp.recipientPhone && (
+                                <span className="text-slate-400 font-normal">({exp.recipientPhone})</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       {exp.vendor && !isBankToMobileTransfer(exp) && (
                         <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                           <Building2 className="w-3 h-3 text-slate-400" />
@@ -388,7 +419,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                     <td className="py-3.5 px-4">
                       {isSelfBankToMobileTransfer(exp) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-indigo-500 text-white shadow-sm">
-                          <ArrowRightLeft className="w-2.5 h-2.5" /> Bank ➔ MoMo (Self)
+                          <ArrowRightLeft className="w-2.5 h-2.5" /> Transfer (Self)
                         </span>
                       ) : isThirdPartyTransferExpense(exp) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-rose-500 text-white shadow-sm">

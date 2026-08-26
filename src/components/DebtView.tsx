@@ -98,6 +98,30 @@ export const DebtView: React.FC<DebtViewProps> = ({
     borrowingAdvice = `Your active debts represent ${debtToSalaryRatio.toFixed(0)}% of your monthly salary. Avoid taking on non-essential new borrowings.`;
   }
 
+  // Calculate Multi-Channel Repayments Deduction Breakdown
+  const repaymentsChannelBreakdown = debts.reduce(
+    (acc, d) => {
+      if (d.type === 'borrowed') {
+        for (const rep of d.repayments || []) {
+          const amt = Number(rep.amount) || 0;
+          const acct = rep.account || (
+            rep.paymentMethod?.toLowerCase().includes('airtel') ? 'airtel_mobile_money'
+            : rep.paymentMethod?.toLowerCase().includes('bank') ? 'bank_account'
+            : rep.paymentMethod?.toLowerCase().includes('cash') ? 'cash_on_hand'
+            : 'mtn_mobile_money'
+          );
+          if (acct === 'bank_account') acc.bank += amt;
+          else if (acct === 'airtel_mobile_money') acc.airtel += amt;
+          else if (acct === 'cash_on_hand') acc.cash += amt;
+          else acc.mtn += amt;
+          acc.total += amt;
+        }
+      }
+      return acc;
+    },
+    { bank: 0, airtel: 0, mtn: 0, cash: 0, total: 0 }
+  );
+
   // Filtered Debts List
   const filteredDebts = debts.filter((debt) => {
     // Type Filter
@@ -272,6 +296,39 @@ export const DebtView: React.FC<DebtViewProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Multi-Channel Debt Repayment Deductions Strip */}
+      {repaymentsChannelBreakdown.total > 0 && (
+        <div className="bg-slate-900 dark:bg-slate-950 p-4 rounded-2xl border border-slate-800 text-white space-y-2">
+          <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-800 font-sans">
+            <span className="font-bold flex items-center gap-1.5 text-slate-200">
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <span>Debt Repayments Deduction Audit (Where Money Left)</span>
+            </span>
+            <span className="font-mono font-bold text-emerald-400">
+              Total Repaid: {formatUGX(repaymentsChannelBreakdown.total)}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+            <div className="p-2 bg-slate-800/70 rounded-xl border border-slate-700/60">
+              <span className="text-[10px] text-slate-400 uppercase block font-sans">🏦 From Bank</span>
+              <span className="font-bold text-slate-200 block mt-0.5">{formatUGX(repaymentsChannelBreakdown.bank)}</span>
+            </div>
+            <div className="p-2 bg-slate-800/70 rounded-xl border border-slate-700/60">
+              <span className="text-[10px] text-rose-400 uppercase block font-sans">🔴 From Airtel Money</span>
+              <span className="font-bold text-rose-300 block mt-0.5">{formatUGX(repaymentsChannelBreakdown.airtel)}</span>
+            </div>
+            <div className="p-2 bg-slate-800/70 rounded-xl border border-slate-700/60">
+              <span className="text-[10px] text-amber-400 uppercase block font-sans">📱 From MTN MoMo</span>
+              <span className="font-bold text-amber-300 block mt-0.5">{formatUGX(repaymentsChannelBreakdown.mtn)}</span>
+            </div>
+            <div className="p-2 bg-slate-800/70 rounded-xl border border-slate-700/60">
+              <span className="text-[10px] text-emerald-400 uppercase block font-sans">💵 From Cash Drawer</span>
+              <span className="font-bold text-emerald-300 block mt-0.5">{formatUGX(repaymentsChannelBreakdown.cash)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">

@@ -354,6 +354,79 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Dedicated 4-Channel Account Breakdown Table */}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/80 space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>Account-by-Account Cashflow & Debt Deduction Audit</span>
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[11px]">
+                    <th className="py-2 px-2.5">Account / Channel</th>
+                    <th className="py-2 px-2.5 text-right">Inflows / Baseline</th>
+                    <th className="py-2 px-2.5 text-right">Transfers In</th>
+                    <th className="py-2 px-2.5 text-right">Transfers Out</th>
+                    <th className="py-2 px-2.5 text-right text-rose-500">Debt Repaid</th>
+                    <th className="py-2 px-2.5 text-right">Direct Spends</th>
+                    <th className="py-2 px-2.5 text-right font-bold">Closing Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {/* Bank Account */}
+                  <tr>
+                    <td className="py-2 px-2.5 font-bold font-sans text-slate-800 dark:text-slate-200">🏦 Bank Account</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalBankInflows + balances.bankDebtRepaymentsReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalMoMoToBankReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500">-{formatUGX(balances.totalBankToMobileTransferred)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500">-{formatUGX(balances.bankDebtRepaymentsPaid)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.directBankSpendings + balances.atmCashouts)}</td>
+                    <td className="py-2 px-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatUGX(balances.availableBankBalance)}</td>
+                  </tr>
+
+                  {/* Airtel Money */}
+                  <tr>
+                    <td className="py-2 px-2.5 font-bold font-sans text-rose-700 dark:text-rose-300">🔴 Airtel Money</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalAirtelInflows + balances.airtelDebtRepaymentsReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.bankToAirtel + balances.mtnToAirtelPrincipal)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500">-{formatUGX(balances.airtelToMtnTotalDeducted + balances.airtelToBankTotalDeducted)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500 font-bold">-{formatUGX(balances.airtelDebtRepaymentsPaid)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.airtelSpent + balances.airtelCashouts)}</td>
+                    <td className={`py-2 px-2.5 text-right font-bold ${balances.availableAirtelBalance >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-rose-600 font-black'}`}>
+                      {balances.availableAirtelBalance >= 0 ? formatUGX(balances.availableAirtelBalance) : `-${formatUGX(Math.abs(balances.availableAirtelBalance))}`}
+                    </td>
+                  </tr>
+
+                  {/* MTN MoMo */}
+                  <tr>
+                    <td className="py-2 px-2.5 font-bold font-sans text-amber-700 dark:text-amber-300">📱 MTN MoMo</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalMtnInflows + balances.mtnDebtRepaymentsReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.bankToMtn + balances.airtelToMtnPrincipal)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500">-{formatUGX(balances.mtnToAirtelTotalDeducted + balances.mtnToBankTotalDeducted)}</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500 font-bold">-{formatUGX(balances.mtnDebtRepaymentsPaid)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.mtnSpent + balances.mtnCashouts)}</td>
+                    <td className={`py-2 px-2.5 text-right font-bold ${balances.availableMtnBalance >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 font-black'}`}>
+                      {balances.availableMtnBalance >= 0 ? formatUGX(balances.availableMtnBalance) : `-${formatUGX(Math.abs(balances.availableMtnBalance))}`}
+                    </td>
+                  </tr>
+
+                  {/* Cash on Hand */}
+                  <tr>
+                    <td className="py-2 px-2.5 font-bold font-sans text-slate-800 dark:text-slate-200">💵 Cash on Hand</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalCashInflows + balances.cashDebtRepaymentsReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.totalCashoutsReceived)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-400">0</td>
+                    <td className="py-2 px-2.5 text-right text-rose-500 font-bold">-{formatUGX(balances.cashDebtRepaymentsPaid)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.totalCashSpendings)}</td>
+                    <td className={`py-2 px-2.5 text-right font-bold ${balances.availableCashOnHand >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 font-black'}`}>
+                      {balances.availableCashOnHand >= 0 ? formatUGX(balances.availableCashOnHand) : `-${formatUGX(Math.abs(balances.availableCashOnHand))}`}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
