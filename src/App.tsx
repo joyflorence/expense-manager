@@ -18,7 +18,7 @@ import { authClient } from './auth';
 import { AuthPage } from './components/AuthPage';
 
 export default function App() {
-  const session = authClient.auth.useSession();
+  const session = authClient.useSession();
   // Financial Cashbook State
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [inflows, setInflows] = useState<Inflow[]>([]);
@@ -199,7 +199,7 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
-    await authClient.auth.signOut();
+    await authClient.signOut();
     setIsLoaded(false);
     setExpenses([]);
     setInflows([]);

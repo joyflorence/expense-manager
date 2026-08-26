@@ -15,7 +15,7 @@ type RequestOptions = {
 };
 
 async function request<T>({ method, path, body }: RequestOptions): Promise<T> {
-  const token = await authClient.auth.getJWTToken?.();
+  const token = await authClient.getJWTToken?.();
   if (!token) throw new Error('Your session has expired. Please sign in again.');
   const response = await window.fetch(path, {
     method,
