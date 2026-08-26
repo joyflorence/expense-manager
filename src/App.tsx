@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut } from 'lucide-react';
+import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod } from './types';
 import { INITIAL_EXPENSES, INITIAL_BUDGETS, INITIAL_DEBTS, INITIAL_INFLOWS } from './data/mockData';
 import { Navbar, ViewTab } from './components/Navbar';
@@ -199,8 +199,14 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
-    await authClient.signOut();
+    try {
+      await authClient.signOut?.();
+    } catch {
+      // Ignore signOut network errors
+    }
     setIsLoaded(false);
+    setSyncStatus('loading');
+    setSyncError(null);
     setExpenses([]);
     setInflows([]);
     setBudgets([]);
@@ -524,16 +530,35 @@ export default function App() {
     return (
       <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 grid place-items-center p-5">
         <div className="max-w-md space-y-4 text-center">
-          <p className={syncStatus === 'error' ? 'text-rose-400' : 'text-slate-300'}>
+          <p className={syncStatus === 'error' ? 'text-rose-400 font-bold text-base' : 'text-slate-300'}>
             {syncStatus === 'error' ? 'Could not load your cashbook from Neon.' : 'Loading your cashbook…'}
           </p>
           {syncStatus === 'error' && (
             <>
-              <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-left text-xs text-rose-200 break-words">{syncError || 'The cashbook API did not return a reason.'}</p>
-              <p className="text-left text-xs text-slate-400">Confirm `DATABASE_URL` uses Neon’s authenticated connection string and run migrations 0001 through 0004 on the same branch.</p>
-              <button type="button" onClick={handleRefresh} className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950">
-                Retry loading cashbook
-              </button>
+              <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-left text-xs text-rose-200 break-words font-mono">
+                {syncError || 'The cashbook API did not return a reason.'}
+              </p>
+              <p className="text-left text-xs text-slate-500 dark:text-slate-400">
+                Confirm `DATABASE_URL` uses Neon’s authenticated connection string and run migrations 0001 through 0004 on the same branch.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-5 py-2.5 font-bold text-xs sm:text-sm text-slate-950 transition active:scale-95 shadow-md cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+                  <span>Back to Sign In Page</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 px-4 py-2.5 font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 transition active:scale-95 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Retry Loading</span>
+                </button>
+              </div>
             </>
           )}
         </div>

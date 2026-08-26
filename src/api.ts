@@ -46,6 +46,35 @@ async function getAuthToken(): Promise<string | null> {
         return sessObj.data.token;
       }
     }
+    // 4. Try checking localStorage / sessionStorage for session JWT tokens
+    if (typeof window !== 'undefined') {
+      const storages = [window.localStorage, window.sessionStorage];
+      for (const storage of storages) {
+        if (!storage) continue;
+        for (let i = 0; i < storage.length; i++) {
+          const key = storage.key(i);
+          if (key && (key.includes('better-auth') || key.includes('session') || key.includes('token') || key.includes('neon') || key.includes('auth'))) {
+            try {
+              const rawVal = storage.getItem(key);
+              if (rawVal) {
+                if (rawVal.startsWith('ey') && rawVal.split('.').length === 3) {
+                  return rawVal;
+                }
+                const parsed = JSON.parse(rawVal) as Record<string, unknown>;
+                if (typeof parsed === 'string' && (parsed as string).startsWith('ey')) return parsed as string;
+                if (typeof parsed?.token === 'string' && parsed.token.startsWith('ey')) return parsed.token;
+                const sess = parsed?.session as Record<string, unknown> | undefined;
+                if (typeof sess?.token === 'string' && sess.token) return sess.token;
+                const data = parsed?.data as Record<string, unknown> | undefined;
+                if (typeof data?.token === 'string' && data.token) return data.token;
+              }
+            } catch {
+              // Ignore JSON parse errors
+            }
+          }
+        }
+      }
+    }
   } catch (error) {
     console.warn('Unable to retrieve auth token from authClient:', error);
   }
