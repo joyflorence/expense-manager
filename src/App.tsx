@@ -26,6 +26,7 @@ export default function App() {
   const [debts, setDebts] = useState<DebtItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading');
+  const [syncError, setSyncError] = useState<string | null>(null);
   const previousRecords = useRef<CashbookState | null>(null);
   const syncQueue = useRef(Promise.resolve());
 
@@ -109,6 +110,7 @@ export default function App() {
     let cancelled = false;
     setIsLoaded(false);
     setSyncStatus('loading');
+    setSyncError(null);
     void loadCashbook()
       .then((state) => {
         if (cancelled) return;
@@ -116,12 +118,15 @@ export default function App() {
         previousRecords.current = state;
         setIsLoaded(true);
         setSyncStatus('saved');
+        setSyncError(null);
       })
       .catch((error) => {
         if (cancelled) return;
         setIsLoaded(false);
         setSyncStatus('error');
-        showToast(error instanceof Error ? error.message : 'Could not connect to the cashbook database.');
+        const message = error instanceof Error ? error.message : 'Could not connect to the cashbook database.';
+        setSyncError(message);
+        showToast(message);
       });
     return () => {
       cancelled = true;
@@ -175,17 +180,21 @@ export default function App() {
   // Refresh data handler
   const handleRefresh = () => {
     setSyncStatus('loading');
+    setSyncError(null);
     void loadCashbook()
       .then((state) => {
         applyRemoteState(state);
         previousRecords.current = state;
         setIsLoaded(true);
         setSyncStatus('saved');
+        setSyncError(null);
         showToast(`Data Synced! ${state.expenses.length} transactions, ${state.inflows.length} inflows loaded.`);
       })
       .catch((error) => {
         setSyncStatus('error');
-        showToast(error instanceof Error ? error.message : 'Could not refresh from Neon.');
+        const message = error instanceof Error ? error.message : 'Could not refresh from Neon.';
+        setSyncError(message);
+        showToast(message);
       });
   };
 
@@ -519,9 +528,13 @@ export default function App() {
             {syncStatus === 'error' ? 'Could not load your cashbook from Neon.' : 'Loading your cashbook…'}
           </p>
           {syncStatus === 'error' && (
-            <button type="button" onClick={handleRefresh} className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950">
-              Retry loading cashbook
-            </button>
+            <>
+              <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-left text-xs text-rose-200 break-words">{syncError || 'The cashbook API did not return a reason.'}</p>
+              <p className="text-left text-xs text-slate-400">Confirm `DATABASE_URL` uses Neon’s authenticated connection string and run migrations 0001 through 0004 on the same branch.</p>
+              <button type="button" onClick={handleRefresh} className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950">
+                Retry loading cashbook
+              </button>
+            </>
           )}
         </div>
       </main>
