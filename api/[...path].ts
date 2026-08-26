@@ -32,5 +32,5 @@ export default async function api(request: VercelRequest, response: VercelRespon
 }
 
 export const config = {
-  runtime: 'nodejs20.x',
+  runtime: 'nodejs',
 };
