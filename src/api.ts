@@ -15,22 +15,26 @@ type RequestOptions = {
 };
 
 async function request<T>({ method, path, body }: RequestOptions): Promise<T> {
+  if (method !== 'GET' && method !== 'PUT' && method !== 'DELETE') {
+    throw new Error(`Invalid cashbook HTTP method: ${String(method)}`);
+  }
   const token = await authClient.getJWTToken?.();
   if (!token) throw new Error('Your session has expired. Please sign in again.');
-  const response = await window.fetch(path, {
+  const requestInit: RequestInit = {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
-  });
-    const responseText = await response.text();
-    let payload: { error?: string } = {};
-    try {
-      payload = JSON.parse(responseText) as { error?: string };
-    } catch {
-    }
+  };
+  const response = await window.fetch(path, requestInit);
+  const responseText = await response.text();
+  let payload: { error?: string } = {};
+  try {
+    payload = JSON.parse(responseText) as { error?: string };
+  } catch {
+  }
   if (!response.ok) throw new Error(payload.error || `Cashbook request ${method} ${path} returned HTTP ${response.status}.`);
   return payload as T;
 }
