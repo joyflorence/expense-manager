@@ -235,7 +235,7 @@ export const InflowModal: React.FC<InflowModalProps> = ({
         netAmount: netReceived,
         destinationAccount,
         destinationBank: destinationAccount === 'bank_account' ? destinationBank : undefined,
-        destinationNetwork: destinationAccount === 'mobile_money' ? destinationNetwork : undefined,
+        destinationNetwork: destinationAccount === 'mobile_money' || destinationAccount === 'mtn_mobile_money' || destinationAccount === 'airtel_mobile_money' ? destinationNetwork : undefined,
         category,
         payerSource: payerSource.trim() || undefined,
         date,
@@ -310,7 +310,7 @@ export const InflowModal: React.FC<InflowModalProps> = ({
             <label className="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
               1. Destination Account (Where Did Money Arrive?)
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {/* Bank Account */}
               <button
                 type="button"
@@ -331,12 +331,15 @@ export const InflowModal: React.FC<InflowModalProps> = ({
                 <span className="text-[10px] opacity-80">Deposited into Equity/Stanbic/Centenary</span>
               </button>
 
-              {/* Mobile Money */}
+              {/* MTN Mobile Money */}
               <button
                 type="button"
-                onClick={() => setDestinationAccount('mobile_money')}
+                onClick={() => {
+                  setDestinationAccount('mtn_mobile_money');
+                  setDestinationNetwork('MTN Mobile Money (*165#)');
+                }}
                 className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition ${
-                  destinationAccount === 'mobile_money'
+                  destinationAccount === 'mtn_mobile_money'
                     ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
@@ -344,11 +347,34 @@ export const InflowModal: React.FC<InflowModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-emerald-500" />
-                    Mobile Money
+                    MTN Mobile Money
                   </span>
-                  {destinationAccount === 'mobile_money' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                  {destinationAccount === 'mtn_mobile_money' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                 </div>
-                <span className="text-[10px] opacity-80">Direct MTN MoMo or Airtel Money</span>
+                <span className="text-[10px] opacity-80">MTN wallet received directly</span>
+              </button>
+
+              {/* Airtel Money */}
+              <button
+                type="button"
+                onClick={() => {
+                  setDestinationAccount('airtel_mobile_money');
+                  setDestinationNetwork('Airtel Money (*185#)');
+                }}
+                className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition ${
+                  destinationAccount === 'airtel_mobile_money'
+                    ? 'bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-300 font-bold shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-rose-500" />
+                    Airtel Money
+                  </span>
+                  {destinationAccount === 'airtel_mobile_money' && <CheckCircle2 className="w-4 h-4 text-rose-500" />}
+                </div>
+                <span className="text-[10px] opacity-80">Airtel wallet received directly</span>
               </button>
 
               {/* Cash on Hand */}
@@ -392,7 +418,7 @@ export const InflowModal: React.FC<InflowModalProps> = ({
             </div>
           )}
 
-          {destinationAccount === 'mobile_money' && (
+          {(destinationAccount === 'mobile_money' || destinationAccount === 'mtn_mobile_money' || destinationAccount === 'airtel_mobile_money') && (
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                 <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
@@ -457,7 +483,7 @@ export const InflowModal: React.FC<InflowModalProps> = ({
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
-                  Net Amount Credited to {destinationAccount === 'bank_account' ? destinationBank : destinationAccount === 'mobile_money' ? destinationNetwork : 'Cash Drawer'}
+                  Net Amount Credited to {destinationAccount === 'bank_account' ? destinationBank : destinationAccount === 'mtn_mobile_money' ? 'MTN Mobile Money' : destinationAccount === 'airtel_mobile_money' ? 'Airtel Money' : destinationAccount === 'mobile_money' ? destinationNetwork : 'Cash Drawer'}
                 </span>
                 <span className="text-xs text-slate-600 dark:text-slate-400">
                   Gross {formatUGX(numAmount)} - Tax {formatUGX(numTax)}

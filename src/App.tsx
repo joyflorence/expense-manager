@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Plus, Receipt, ArrowDownLeft } from 'lucide-react';
-import { Expense, MonthlyBudget, DebtItem, Inflow } from './types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut } from 'lucide-react';
+import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod } from './types';
 import { INITIAL_EXPENSES, INITIAL_BUDGETS, INITIAL_DEBTS, INITIAL_INFLOWS } from './data/mockData';
 import { Navbar, ViewTab } from './components/Navbar';
 import { OverviewView } from './components/OverviewView';
@@ -13,9 +13,12 @@ import { BudgetModal } from './components/BudgetModal';
 import { DebtModal } from './components/DebtModal';
 import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
-import { CashbookState, loadCashbook, saveCashbook } from './api';
+import { CashbookState, loadCashbook, saveRecord, deleteRecord, RecordKind } from './api';
+import { authClient } from './auth';
+import { AuthPage } from './components/AuthPage';
 
 export default function App() {
+  const session = authClient.useSession();
   // Financial Cashbook State
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [inflows, setInflows] = useState<Inflow[]>([]);
@@ -23,6 +26,7 @@ export default function App() {
   const [debts, setDebts] = useState<DebtItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading');
+  const previousRecords = useRef<CashbookState | null>(null);
 
   const [currentTab, setCurrentTab] = useState<ViewTab>('overview');
 
@@ -75,6 +79,19 @@ export default function App() {
     }, 3500);
   };
 
+  const downloadBackup = (reason: 'clear' | 'reset') => {
+    const backup = { app: 'OmniTrack Cashbook', exportedAt: new Date().toISOString(), expenses, inflows, budgets, debts };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `OmniTrack_before_${reason}_${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const createId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+  const isPositiveAmount = (value: number) => Number.isFinite(value) && value > 0;
+
   const applyRemoteState = (state: CashbookState) => {
     setExpenses(state.expenses || []);
     setInflows(state.inflows || []);
@@ -90,20 +107,45 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!session.data) {
+      setIsLoaded(false);
+      return;
+    }
+    setIsLoaded(false);
+    setSyncStatus('loading');
     void loadRemoteCashbook().catch(() => setSyncStatus('error'));
-  }, []);
+  }, [session.data]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    const state = { expenses, inflows, budgets, debts };
-    const timer = window.setTimeout(() => {
-      setSyncStatus('saving');
-      void saveCashbook(state)
-        .then(() => setSyncStatus('saved'))
-        .catch(() => setSyncStatus('error'));
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [isLoaded, expenses, inflows, budgets, debts]);
+    if (!isLoaded || !session.data) return;
+    const current: CashbookState = { expenses, inflows, budgets, debts };
+    const previous = previousRecords.current;
+    previousRecords.current = current;
+    if (!previous) return;
+
+    const groups: Array<[RecordKind, Array<{ id?: string }>, Array<{ id?: string }>]> = [
+      ['expense', current.expenses, previous.expenses],
+      ['inflow', current.inflows, previous.inflows],
+      ['budget', current.budgets.map((budget) => ({ ...budget, id: budget.month })), previous.budgets.map((budget) => ({ ...budget, id: budget.month }))],
+      ['debt', current.debts, previous.debts],
+    ];
+    const writes: Promise<unknown>[] = [];
+    for (const [kind, currentRecords, previousRecordsForKind] of groups) {
+      const previousById = new Map(previousRecordsForKind.map((record) => [record.id, record]));
+      for (const record of currentRecords) {
+        if (record.id && JSON.stringify(record) !== JSON.stringify(previousById.get(record.id))) {
+          writes.push(saveRecord(kind, record));
+        }
+      }
+      const currentIds = new Set(currentRecords.map((record) => record.id));
+      for (const record of previousRecordsForKind) {
+        if (record.id && !currentIds.has(record.id)) writes.push(deleteRecord(kind, record.id));
+      }
+    }
+    if (writes.length === 0) return;
+    setSyncStatus('saving');
+    void Promise.all(writes).then(() => setSyncStatus('saved')).catch(() => setSyncStatus('error'));
+  }, [isLoaded, session.data, expenses, inflows, budgets, debts]);
 
   useEffect(() => {
     localStorage.setItem('omnitrack_selected_month', selectedMonth);
@@ -117,6 +159,30 @@ export default function App() {
         showToast(`Data Synced! ${state.expenses.length} transactions, ${state.inflows.length} inflows loaded.`);
       })
       .catch(() => showToast('Could not refresh from Neon.'));
+  };
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    setIsLoaded(false);
+    setExpenses([]);
+    setInflows([]);
+    setBudgets([]);
+    setDebts([]);
+    previousRecords.current = null;
+  };
+
+  const handleRetrySync = () => {
+    previousRecords.current = null;
+    setSyncStatus('saving');
+    const records: Array<[RecordKind, unknown[]]> = [
+      ['expense', expenses],
+      ['inflow', inflows],
+      ['budget', budgets.map((budget) => ({ ...budget, id: budget.month }))],
+      ['debt', debts],
+    ];
+    void Promise.all(records.flatMap(([kind, items]) => items.map((record) => saveRecord(kind, record))))
+      .then(() => setSyncStatus('saved'))
+      .catch(() => setSyncStatus('error'));
   };
 
   // Derived available months list
@@ -163,6 +229,10 @@ export default function App() {
 
   // Inflow handlers
   const handleSaveInflow = (inflowData: Omit<Inflow, 'id'>, editingId?: string) => {
+    if (!isPositiveAmount(inflowData.amount) || (inflowData.taxDeduction || 0) < 0 || inflowData.netAmount < 0) {
+      showToast('Enter a valid positive inflow amount and non-negative deductions.');
+      return;
+    }
     const todayStr = new Date().toISOString().slice(0, 10);
     const infDate = inflowData.date || todayStr;
 
@@ -174,7 +244,7 @@ export default function App() {
       showToast(`Inflow "${inflowData.title}" updated!`);
     } else {
       const newInflow: Inflow = {
-        id: `inf-${Date.now()}`,
+        id: createId('inf'),
         ...inflowData,
         date: infDate,
       };
@@ -193,6 +263,7 @@ export default function App() {
   };
 
   const handleDeleteInflow = (inflowId: string) => {
+    if (!window.confirm('Delete this inflow record? This cannot be undone.')) return;
     setInflows((prev) => {
       const updated = prev.filter((i) => i.id !== inflowId);
       return updated;
@@ -202,6 +273,10 @@ export default function App() {
 
   // Expense handlers
   const handleSaveExpense = (expenseData: Omit<Expense, 'id'>, editingId?: string) => {
+    if (!isPositiveAmount(expenseData.amount) || expenseData.taxAmount < 0 || expenseData.totalAmount < expenseData.amount) {
+      showToast('Enter a valid positive amount and non-negative fee or tax.');
+      return;
+    }
     const todayStr = new Date().toISOString().slice(0, 10);
     const expDate = expenseData.date || todayStr;
 
@@ -213,7 +288,7 @@ export default function App() {
       showToast(`Transaction "${expenseData.title}" updated!`);
     } else {
       const newExpense: Expense = {
-        id: `exp-${Date.now()}`,
+        id: createId('exp'),
         ...expenseData,
         date: expDate,
       };
@@ -233,6 +308,7 @@ export default function App() {
   };
 
   const handleDeleteExpense = (expenseId: string) => {
+    if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
     setExpenses((prev) => {
       const updated = prev.filter((e) => e.id !== expenseId);
       return updated;
@@ -242,6 +318,10 @@ export default function App() {
 
   // Budget handler
   const handleSaveBudget = (updatedBudget: MonthlyBudget) => {
+    if (updatedBudget.workBudget < 0 || updatedBudget.personalBudget < 0 || (updatedBudget.monthlySalary || 0) < 0 || (updatedBudget.savingsTarget || 0) < 0) {
+      showToast('Budget amounts cannot be negative.');
+      return;
+    }
     setBudgets((prev) => {
       const exists = prev.some((b) => b.month === updatedBudget.month);
       if (exists) {
@@ -282,6 +362,10 @@ export default function App() {
 
   // Debt & Loan Handlers
   const handleSaveDebt = (debtData: Omit<DebtItem, 'id' | 'repaidAmount' | 'status' | 'repayments'>) => {
+    if (!isPositiveAmount(debtData.originalAmount)) {
+      showToast('Enter a valid positive debt amount.');
+      return;
+    }
     if (debtToEdit) {
       setDebts((prev) =>
         prev.map((d) =>
@@ -303,7 +387,7 @@ export default function App() {
     } else {
       const newDebt: DebtItem = {
         ...debtData,
-        id: `debt-${Date.now()}`,
+        id: createId('debt'),
         repaidAmount: 0,
         status: debtData.isGiftOrRemittance ? 'forgiven_gift' : 'active',
         repayments: [],
@@ -314,6 +398,7 @@ export default function App() {
   };
 
   const handleDeleteDebt = (debtId: string) => {
+    if (!window.confirm('Delete this debt record and its repayment history? This cannot be undone.')) return;
     setDebts((prev) => prev.filter((d) => d.id !== debtId));
     showToast('Deleted debt/transfer record');
   };
@@ -322,9 +407,14 @@ export default function App() {
     debtId: string,
     amount: number,
     date: string,
-    paymentMethod: any,
+    paymentMethod: PaymentMethod | undefined,
     notes: string
   ) => {
+    const debt = debts.find((item) => item.id === debtId);
+    if (!debt || !isPositiveAmount(amount) || amount > Math.max(0, debt.originalAmount - debt.repaidAmount)) {
+      showToast('Repayment must be positive and cannot exceed the remaining balance.');
+      return;
+    }
     setDebts((prev) =>
       prev.map((d) => {
         if (d.id !== debtId) return d;
@@ -333,7 +423,7 @@ export default function App() {
         const newRepayments = [
           ...(d.repayments || []),
           {
-            id: `rep-${Date.now()}`,
+            id: createId('rep'),
             amount,
             date,
             paymentMethod,
@@ -369,6 +459,8 @@ export default function App() {
 
   // Clear all data for clean slate
   const handleClearData = () => {
+    if (!window.confirm('Clear all expenses, inflows, budgets, debts, and repayment history from Neon? A JSON backup will download before deletion.')) return;
+    downloadBackup('clear');
     setExpenses([]);
     setInflows([]);
     setBudgets([]);
@@ -378,6 +470,8 @@ export default function App() {
 
   // Reset clean baseline data
   const handleResetData = () => {
+    if (!window.confirm('Reset this cashbook to the app baseline, replacing your expenses, inflows, budgets, debts, and repayment history? A JSON backup will download first.')) return;
+    downloadBackup('reset');
     setExpenses(INITIAL_EXPENSES);
     setInflows(INITIAL_INFLOWS);
     setBudgets(INITIAL_BUDGETS);
@@ -392,6 +486,12 @@ export default function App() {
     if (data.budgets) setBudgets(data.budgets);
     if (data.debts) setDebts(data.debts);
   };
+
+  if (session.isPending) {
+    return <main className="min-h-screen bg-slate-950 text-slate-300 grid place-items-center">Checking your session…</main>;
+  }
+
+  if (!session.data) return <AuthPage />;
 
   if (!isLoaded) {
     return (
@@ -524,10 +624,14 @@ export default function App() {
       {/* Footer Status Bar with Quick Action */}
       <footer className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 py-2 text-[11px] text-slate-500 font-mono flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            CASHBOOK LEDGER: ACTIVE
-          </span>
+          <button
+            type="button"
+            onClick={syncStatus === 'error' ? handleRetrySync : undefined}
+            className={`flex items-center gap-1.5 font-semibold ${syncStatus === 'error' ? 'text-rose-600 dark:text-rose-400 underline cursor-pointer' : 'text-emerald-600 dark:text-emerald-400'}`}
+          >
+            <span className={`w-2 h-2 rounded-full ${syncStatus === 'error' ? 'bg-rose-500' : syncStatus === 'saving' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+            {syncStatus === 'saving' ? 'SAVING TO NEON…' : syncStatus === 'error' ? 'SYNC FAILED — RETRY' : 'SAVED TO NEON'}
+          </button>
           <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
           <span className="text-slate-600 dark:text-slate-400 hidden sm:inline">FISCAL RECONCILIATION: ENABLED</span>
         </div>
@@ -559,6 +663,9 @@ export default function App() {
 
         <div className="flex items-center gap-4">
           <span className="hidden sm:inline text-slate-400 dark:text-slate-500">INFLOW & OUTFLOW TRACKER</span>
+          <button onClick={() => void handleSignOut()} className="inline-flex items-center gap-1 text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 font-semibold" title="Sign out">
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </button>
           <span className="text-slate-600 dark:text-slate-400 font-semibold">OMNITRACK.CASH V2.4.0</span>
         </div>
       </footer>

@@ -1,4 +1,5 @@
 export type PurposeType = 'work' | 'personal';
+export type AccountType = 'bank_account' | 'mtn_mobile_money' | 'airtel_mobile_money' | 'cash_on_hand' | 'mobile_money';
 
 export type InflowCategory =
   | 'Salary & Wages'
@@ -14,7 +15,7 @@ export type InflowCategory =
   | 'Side Hustle'
   | 'Other Inflow';
 
-export type InflowDestination = 'bank_account' | 'mobile_money' | 'cash_on_hand';
+export type InflowDestination = AccountType;
 
 export interface Inflow {
   id: string;
@@ -22,7 +23,7 @@ export interface Inflow {
   amount: number; // Gross amount received
   taxDeduction?: number; // PAYE / WHT / local taxes deducted at source (if any)
   netAmount: number; // amount - (taxDeduction || 0)
-  destinationAccount: InflowDestination; // 'bank_account' | 'mobile_money' | 'cash_on_hand'
+  destinationAccount: InflowDestination;
   destinationBank?: string; // e.g. Equity Bank Uganda, Stanbic, Centenary, DFCU, Absa, etc.
   destinationNetwork?: string; // e.g. MTN Mobile Money (*165#), Airtel Money (*185#)
   category: InflowCategory;
@@ -79,7 +80,7 @@ export interface Expense {
   paymentMethod: PaymentMethod;
   date: string; // YYYY-MM-DD
   isTaxDeductible: boolean;
-  deductionSource?: 'cash_on_hand' | 'mobile_money_bank' | 'bank_account' | 'mobile_money'; // Where spending is deducted from
+  deductionSource?: AccountType; // Where spending is deducted from
   isSavings?: boolean; // True if this entry is a deposit into savings / savings goal contribution
   isWithdrawal?: boolean; // True if this entry represents a cash withdrawal / cashout
   isBankToMobileTransfer?: boolean; // True if this entry is a money transfer from bank to mobile wallet
@@ -89,6 +90,8 @@ export interface Expense {
   recipientMobileNetwork?: string; // e.g. MTN Mobile Money, Airtel Money
   recipientPhone?: string; // Phone number or MoMo account
   transferFee?: number; // Bank transfer transaction charge
+  sourceAccount?: AccountType; // Account money leaves for an internal transfer
+  destinationAccount?: AccountType; // Account money enters for an internal transfer
   referenceNumber?: string; // Bank / MoMo reference or transaction ID
   vendor?: string;
   notes?: string;

@@ -309,7 +309,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>MoMo: {formatUGX(balances.availableMobileMoneyBalance)}</span>
+            <span>MTN: {formatUGX(balances.availableMtnBalance)} | Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
             <button 
               onClick={() => {
                 setFilterType('transfers');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
+import { AccountType, Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
 import { formatUGX } from '../utils/format';
 import { 
   X, 
@@ -128,10 +128,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [purpose, setPurpose] = useState<PurposeType>('personal');
   const [category, setCategory] = useState<ExpenseCategory>('Dining & Meals');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash on Hand (From Cashout)');
-  const [deductionSource, setDeductionSource] = useState<'cash_on_hand' | 'mobile_money_bank' | 'bank_account' | 'mobile_money'>('cash_on_hand');
+  const [deductionSource, setDeductionSource] = useState<AccountType>('cash_on_hand');
   const [date, setDate] = useState('');
   const [isTaxDeductible, setIsTaxDeductible] = useState(false);
   const [cashoutSource, setCashoutSource] = useState<'momo' | 'card' | 'agent'>('momo');
+  const [cashoutWallet, setCashoutWallet] = useState<AccountType>('mtn_mobile_money');
   
   // Transfer configuration
   const [transferRecipientType, setTransferRecipientType] = useState<'self' | 'third_party'>('self');
@@ -140,6 +141,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [recipientNetwork, setRecipientNetwork] = useState<string>('MTN Mobile Money (*165#)');
   const [recipientPhone, setRecipientPhone] = useState<string>('');
   const [refNumber, setRefNumber] = useState<string>('');
+  const [transferSourceAccount, setTransferSourceAccount] = useState<AccountType>('bank_account');
+  const [transferDestinationAccount, setTransferDestinationAccount] = useState<AccountType>('mtn_mobile_money');
   
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
@@ -169,7 +172,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       method === 'Mobile Money Transfer' ||
       method === 'Bank Transfer'
     ) {
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mobile_money');
       if (method === 'Mobile Money Transfer') {
         handleTaxRateChange(0.5);
       } else {
@@ -221,28 +224,28 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setTitle('MTN Airtime / Voice Minutes');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mobile_money');
       setVendor('MTN Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'airtel_airtime') {
       setTitle('Airtel Airtime / Voice Minutes');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mobile_money');
       setVendor('Airtel Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'mtn_data') {
       setTitle('MTN Data Internet Bundle');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mobile_money');
       setVendor('MTN Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'airtel_data') {
       setTitle('Airtel Data Internet Bundle');
       setCategory('Airtime, Data & Minutes');
       setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
-      setDeductionSource('mobile_money_bank');
+      setDeductionSource('mobile_money');
       setVendor('Airtel Uganda');
       handleTaxRateChange(0.0);
     } else if (preset === 'yaka_power') {
@@ -290,7 +293,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
          expenseToEdit.paymentMethod === 'Bank Direct / Card Online' ||
          expenseToEdit.paymentMethod === 'Mobile Money Transfer' ||
          expenseToEdit.paymentMethod === 'Bank Transfer'
-          ? 'mobile_money_bank'
+          ? 'mobile_money'
           : 'cash_on_hand')
       );
       setDate(expenseToEdit.date);
@@ -312,6 +315,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         setRecipientNetwork(expenseToEdit.recipientMobileNetwork || 'MTN Mobile Money (*165#)');
         setRecipientPhone(expenseToEdit.recipientPhone || '');
         setRefNumber(expenseToEdit.referenceNumber || '');
+        setTransferSourceAccount(expenseToEdit.sourceAccount || 'bank_account');
+        setTransferDestinationAccount(expenseToEdit.destinationAccount || (expenseToEdit.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money'));
       } else if (expenseToEdit.isSavings || expenseToEdit.category === 'Savings & Investments') {
         setEntryMode('savings');
       } else if (
@@ -354,9 +359,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           : 'Cash on Hand (From Cashout)'
       );
       setDeductionSource(initialMode === 'transfer' ? 'bank_account' : 'cash_on_hand');
+      setTransferSourceAccount('bank_account');
+      setTransferDestinationAccount('mtn_mobile_money');
       setDate(new Date().toISOString().slice(0, 10));
       setIsTaxDeductible(false);
       setCashoutSource('momo');
+      setCashoutWallet('mtn_mobile_money');
       setTransferRecipientType('self');
       setRecipientName('');
       setSourceBank('Equity Bank Uganda');
@@ -378,6 +386,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const numTax = typeof taxAmount === 'number' ? taxAmount : 0;
   const totalAmount = parseFloat((numAmount + numTax).toFixed(2));
   const isThirdPartyTransfer = entryMode === 'transfer' && transferRecipientType === 'third_party';
+  const accountLabel = (account: AccountType) => ({
+    bank_account: 'Bank Account',
+    mtn_mobile_money: 'MTN Mobile Money',
+    airtel_mobile_money: 'Airtel Money',
+    mobile_money: 'Mobile Money',
+    cash_on_hand: 'Cash on Hand',
+  }[account]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -409,14 +424,18 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           : paymentMethod,
         deductionSource: isTransfer
           ? 'bank_account'
-          : isSavings || isWithdrawal
+          : isSavings
           ? undefined
+          : isWithdrawal
+          ? cashoutSource === 'momo' ? cashoutWallet : 'bank_account'
           : deductionSource,
         date: date || new Date().toISOString().slice(0, 10),
         isTaxDeductible: (purpose === 'work' && (entryMode === 'spending' || isThirdPartyTransfer)) ? isTaxDeductible : false,
         isSavings,
         isWithdrawal,
         isBankToMobileTransfer: isTransfer,
+        sourceAccount: isTransfer ? transferSourceAccount : undefined,
+        destinationAccount: isTransfer ? transferDestinationAccount : undefined,
         transferRecipientType: isTransfer ? transferRecipientType : undefined,
         recipientName: recipientName.trim() || undefined,
         sourceBank: isTransfer ? sourceBank : undefined,
@@ -453,7 +472,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <PiggyBank className="w-5 h-5 text-emerald-500" />
             ) : entryMode === 'cashout' ? (
               <Banknote className="w-5 h-5 text-amber-500" />
-            ) : deductionSource === 'mobile_money_bank' ? (
+            ) : deductionSource !== 'cash_on_hand' ? (
               <Smartphone className="w-5 h-5 text-indigo-500" />
             ) : (
               <Receipt className="w-5 h-5 text-emerald-500" />
@@ -804,36 +823,54 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1 text-xs">
-                    Source Bank Account
+                    Source Account
                   </label>
                   <select
-                    value={sourceBank}
+                    value={transferSourceAccount}
                     onChange={(e) => {
-                      setSourceBank(e.target.value);
-                      if (transferRecipientType === 'self') {
-                        setTitle(`${e.target.value.split(' ')[0]} to Mobile Money Transfer (Self)`);
-                      }
+                      const value = e.target.value as AccountType;
+                      setTransferSourceAccount(value);
+                      if (value !== 'bank_account') setPaymentMethod('Mobile Money Transfer');
                     }}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
                   >
-                    {UGANDA_BANKS.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
+                    <option value="bank_account">Bank Account</option>
+                    <option value="mtn_mobile_money">MTN Mobile Money</option>
+                    <option value="airtel_mobile_money">Airtel Money</option>
                   </select>
+                  {transferSourceAccount === 'bank_account' && (
+                    <select
+                      value={sourceBank}
+                      onChange={(e) => setSourceBank(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
+                    >
+                      {UGANDA_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1 text-xs">
-                    Destination Mobile Network / Channel
+                    Destination Account
                   </label>
+                  <select
+                    value={transferDestinationAccount}
+                    onChange={(e) => {
+                      const value = e.target.value as AccountType;
+                      setTransferDestinationAccount(value);
+                      setRecipientNetwork(value === 'airtel_mobile_money' ? 'Airtel Money (*185#)' : 'MTN Mobile Money (*165#)');
+                    }}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="mtn_mobile_money">MTN Mobile Money</option>
+                    <option value="airtel_mobile_money">Airtel Money</option>
+                  </select>
                   <select
                     value={recipientNetwork}
                     onChange={(e) => setRecipientNetwork(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
+                    className="w-full mt-2 px-3 py-2 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-slate-900 dark:text-white font-medium"
                   >
-                    {MOBILE_NETWORKS.map((net) => (
-                      <option key={net} value={net}>{net}</option>
-                    ))}
+                    {MOBILE_NETWORKS.map((net) => <option key={net} value={net}>{net}</option>)}
                   </select>
                 </div>
               </div>
@@ -908,7 +945,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Where should this spending be deducted from?
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -933,22 +970,60 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setDeductionSource('mobile_money_bank');
+                    setDeductionSource('mtn_mobile_money');
                     setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
                   }}
                   className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 ${
-                    deductionSource === 'mobile_money_bank'
+                    deductionSource === 'mtn_mobile_money'
                       ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20'
                       : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-1.5 font-bold text-xs">
                     <Smartphone className="w-4 h-4 text-indigo-500" />
-                    Mobile Money / Bank Pool
+                    MTN Mobile Money
                   </div>
                   <p className="text-[11px] opacity-80">
-                    Deducted from MoMo (Airtime, Data bundles, Voice minutes, Yaka)
+                    Deducted from your MTN wallet
                   </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeductionSource('airtel_mobile_money');
+                    setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 ${
+                    deductionSource === 'airtel_mobile_money'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-950 dark:text-rose-200 ring-2 ring-rose-500/20'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                    <Smartphone className="w-4 h-4 text-rose-500" />
+                    Airtel Money
+                  </div>
+                  <p className="text-[11px] opacity-80">Deducted from your Airtel wallet</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeductionSource('bank_account');
+                    setPaymentMethod('Bank Direct / Card Online');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 ${
+                    deductionSource === 'bank_account'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-950 dark:text-sky-200 ring-2 ring-sky-500/20'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                    <Landmark className="w-4 h-4 text-sky-500" />
+                    Bank Account
+                  </div>
+                  <p className="text-[11px] opacity-80">Deducted directly from your bank</p>
                 </button>
               </div>
 
@@ -1046,6 +1121,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   <span className="text-[10px] opacity-80">EquiDuuka / Agent</span>
                 </button>
               </div>
+
+              {cashoutSource === 'momo' && (
+                <select
+                  value={cashoutWallet}
+                  onChange={(e) => setCashoutWallet(e.target.value as AccountType)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                >
+                  <option value="mtn_mobile_money">Deduct from MTN Mobile Money</option>
+                  <option value="airtel_mobile_money">Deduct from Airtel Money</option>
+                </select>
+              )}
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 rounded-xl text-amber-900 dark:text-amber-200 text-xs space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
@@ -1249,10 +1335,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     ? `Deducted from Bank Account → Logged as ${category} Expense`
                     : `Deducted from Bank Account → ${formatUGX(numAmount)} credited to MoMo Wallet`
                   : entryMode === 'cashout'
-                  ? 'Deducted from Bank/MoMo → Added to Cash on Hand'
-                  : deductionSource === 'mobile_money_bank'
-                  ? 'Deducted directly from Mobile Money / Bank Digital Pool'
-                  : 'Deducted from Cash on Hand (Cashout Drawer)'}
+                  ? `Deducted from ${accountLabel(cashoutSource === 'momo' ? cashoutWallet : 'bank_account')} → Added to Cash on Hand`
+                  : `Deducted from ${accountLabel(deductionSource)}`}
               </span>
             </div>
             <span className="font-extrabold text-slate-900 dark:text-white text-base font-mono">

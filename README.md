@@ -4,14 +4,17 @@ Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, b
 
 ## Deploy to Netlify
 
-1. Create a Neon project and copy its pooled connection string.
-2. In Neon SQL Editor, run [`db/migrations/0001_cashbook_records.sql`](db/migrations/0001_cashbook_records.sql).
-3. Import this Git repository into Netlify. Its build settings are already defined in [`netlify.toml`](netlify.toml).
-4. In **Netlify → Site configuration → Environment variables**, add:
+1. Create a Neon project and enable **Auth** for its production branch. Copy the Auth URL from **Auth → Configuration**.
+2. In **Settings → RLS**, configure Neon RLS with the JWKS URL displayed on the Auth configuration page. Use the `authenticated` database connection string for `DATABASE_URL`.
+3. In Neon SQL Editor, run [`db/migrations/0001_cashbook_records.sql`](db/migrations/0001_cashbook_records.sql), then [`db/migrations/0002_auth_and_row_security.sql`](db/migrations/0002_auth_and_row_security.sql).
+4. Import this Git repository into Netlify. Its build settings are already defined in [`netlify.toml`](netlify.toml).
+5. In **Netlify → Site configuration → Environment variables**, add:
    - `DATABASE_URL`: the Neon connection string.
-5. Deploy. Netlify uses Node 20 and runs `npm install && npm run build`.
+   - `VITE_NEON_AUTH_URL`: the Neon Auth URL. This is intentionally public browser configuration.
+6. In Neon Auth configuration, add your Netlify production URL to the allowed redirect domains and configure email delivery if you require email verification or password reset emails.
+7. Deploy. Netlify uses Node 20 and runs `npm install && npm run build`.
 
-This is a single-user setup without authentication. Keep the Netlify site URL private; anyone who can reach the site's API endpoint can read or change the cashbook data.
+Every cashbook record is now protected by Neon Auth identity and a Neon Row-Level Security policy. Each user can only read and change their own records.
 
 ## Optional local development
 

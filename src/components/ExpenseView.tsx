@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
+import { AccountType, Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
 import { formatUGX } from '../utils/format';
 import { isBankToMobileTransfer, isSelfBankToMobileTransfer, isThirdPartyTransferExpense, isWithdrawalEntry } from '../utils/cashbookHelpers';
 import { 
@@ -41,16 +41,25 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   onEditExpense,
   onDeleteExpense,
 }) => {
+  const accountLabel = (account?: AccountType) => ({
+    bank_account: 'Bank Account',
+    mtn_mobile_money: 'MTN Mobile Money',
+    airtel_mobile_money: 'Airtel Money',
+    mobile_money: 'Mobile Money',
+    cash_on_hand: 'Cash on Hand',
+  }[account || 'cash_on_hand']);
   const [purposeFilter, setPurposeFilter] = useState<'all' | PurposeType>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [taxDeductibleOnly, setTaxDeductibleOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   // Filter expenses
   const filteredExpenses = expenses.filter((exp) => {
     if (purposeFilter !== 'all' && exp.purpose !== purposeFilter) return false;
     if (categoryFilter !== 'all' && exp.category !== categoryFilter) return false;
     if (taxDeductibleOnly && !exp.isTaxDeductible) return false;
+    if (dateFilter && exp.date !== dateFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = exp.title.toLowerCase().includes(q);
@@ -251,7 +260,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
         {/* Search & Category Filter */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-          <div className="sm:col-span-8 relative">
+          <div className="sm:col-span-6 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -262,7 +271,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             />
           </div>
 
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-3">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -275,6 +284,15 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="sm:col-span-3">
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              aria-label="Filter transactions by date"
+              className="w-full py-1.5 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
           </div>
         </div>
       </div>
@@ -437,6 +455,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                       <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                         <Calendar className="w-2.5 h-2.5" />
                         {exp.date}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Deducted from: {isSelfBankToMobileTransfer(exp)
+                          ? accountLabel(exp.sourceAccount || 'bank_account')
+                          : accountLabel(exp.deductionSource)}
                       </div>
                     </td>
 

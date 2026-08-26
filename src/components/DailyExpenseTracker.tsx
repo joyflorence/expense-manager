@@ -364,6 +364,8 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
             <span className="text-base font-black font-mono text-indigo-300 block mt-1">
               {formatUGX(balances.availableMobileMoneyBalance)}
             </span>
+            <span className="text-[10px] text-amber-300 block mt-0.5">MTN {formatUGX(balances.availableMtnBalance)}</span>
+            <span className="text-[10px] text-rose-300 block mt-0.5">Airtel {formatUGX(balances.availableAirtelBalance)}</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
               +{formatUGX(balances.totalBankToMobileReceivedInMoMo)} received from Bank
             </span>

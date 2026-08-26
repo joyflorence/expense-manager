@@ -1,7 +1,7 @@
 -- Run this once in Neon SQL Editor before the first Netlify deployment.
 CREATE TABLE IF NOT EXISTS cashbook_records (
   id text PRIMARY KEY,
-  kind text NOT NULL CHECK (kind IN ('expense', 'inflow', 'budget', 'debt')),
+  kind text NOT NULL CHECK (kind IN ('expense', 'inflow', 'budget', 'debt', 'transfer')),
   occurred_on date,
   month_key text,
   record jsonb NOT NULL,
