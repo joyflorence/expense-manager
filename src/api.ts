@@ -8,10 +8,16 @@ export interface CashbookState {
   debts: DebtItem[];
 }
 
-async function request<T>(method: 'GET' | 'PUT' | 'DELETE', body?: unknown, path = '/api/state'): Promise<T> {
+type RequestOptions = {
+  method: 'GET' | 'PUT' | 'DELETE';
+  path: string;
+  body?: unknown;
+};
+
+async function request<T>({ method, path, body }: RequestOptions): Promise<T> {
   const token = await authClient.getJWTToken?.();
   if (!token) throw new Error('Your session has expired. Please sign in again.');
-  const response = await fetch(path, {
+  const response = await window.fetch(path, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -25,20 +31,20 @@ async function request<T>(method: 'GET' | 'PUT' | 'DELETE', body?: unknown, path
       payload = JSON.parse(responseText) as { error?: string };
     } catch {
     }
-    if (!response.ok) throw new Error(payload.error || `Cashbook request ${method} ${path} returned HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(payload.error || `Cashbook request ${method} ${path} returned HTTP ${response.status}.`);
   return payload as T;
 }
 
 export function loadCashbook() {
-  return request<CashbookState>('GET');
+  return request<CashbookState>({ method: 'GET', path: '/api/state' });
 }
 
 export type RecordKind = 'expense' | 'inflow' | 'budget' | 'debt';
 
 export function saveRecord(kind: RecordKind, record: unknown) {
-  return request<{ success: boolean }>('PUT', { kind, record }, '/api/records');
+  return request<{ success: boolean }>({ method: 'PUT', path: '/api/records', body: { kind, record } });
 }
 
 export function deleteRecord(kind: RecordKind, id: string) {
-  return request<{ success: boolean }>('DELETE', { kind, id }, '/api/records');
+  return request<{ success: boolean }>({ method: 'DELETE', path: '/api/records', body: { kind, id } });
 }

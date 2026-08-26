@@ -20,6 +20,13 @@ export function AuthPage() {
     return `${message}${status ? ` (HTTP ${status})` : ''}`;
   };
 
+  const formatUnexpectedAuthError = (error: unknown) => {
+    if (error instanceof TypeError && error.message.includes("'[object Promise]' is not a valid HTTP method")) {
+      return 'Neon Auth client configuration is incompatible with the deployed SDK. Redeploy after installing the pinned dependency version.';
+    }
+    return error instanceof Error ? `Unable to reach Neon Auth: ${error.message}` : 'Unable to reach Neon Auth. Please try again.';
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage('');
@@ -38,11 +45,10 @@ export function AuthPage() {
       }
       else if (mode === 'sign-up') setMessage('Account created. Check your email if verification is enabled.');
     } catch (error) {
-      setMessage(error instanceof Error
-        ? error.message.toLowerCase().includes('invalid origin')
-          ? `Unable to reach Neon Auth: ${error.message} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`
-          : `Unable to reach Neon Auth: ${error.message}`
-        : 'Unable to reach Neon Auth. Please try again.');
+      const errorMessage = formatUnexpectedAuthError(error);
+      setMessage(errorMessage.toLowerCase().includes('invalid origin')
+        ? `${errorMessage} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`
+        : errorMessage);
     } finally {
       setIsSubmitting(false);
     }
