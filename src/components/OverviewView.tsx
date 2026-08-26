@@ -433,7 +433,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-emerald-500" />
                   Financial Transactions & Cashflow Logs
-                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Track cash inflows, Bank transfers, cashouts, direct spendings, and savings.
                 </p>
               </div>
