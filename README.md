@@ -14,14 +14,14 @@ Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, b
 ## Deploy to Netlify / Vercel
 
 In your hosting dashboard (Netlify or Vercel), add the following environment variables:
-- `VITE_SUPABASE_URL`: Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase public anon key
-- `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_ANON_KEY`: Your Supabase public anon key
+- `SUPABASE_URL`: Your Supabase Project URL (`https://<project-id>.supabase.co`)
+- `SUPABASE_ANON_KEY`: Your Supabase Public `anon` Key
+
+*(Optional aliases `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are also supported automatically).*
 
 ### Local Development
 
-1. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to `.env.local`.
+1. Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to `.env.local`.
 2. Install dependencies and start the dev server:
 
 ```powershell

@@ -1,13 +1,13 @@
 import { createClient, Session } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const authConfigError = !supabaseUrl || !supabaseAnonKey
-  ? 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment and redeploy.'
+  ? 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in your environment and redeploy.'
   : /^https:\/\/YOUR-|^YOUR-/i.test(supabaseUrl) || /^YOUR-/i.test(supabaseAnonKey)
-  ? 'Supabase is still using placeholder credentials. Replace VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with your project keys.'
+  ? 'Supabase is still using placeholder credentials. Replace SUPABASE_URL and SUPABASE_ANON_KEY with your project keys.'
   : null;
 
 export const supabase = createClient(
