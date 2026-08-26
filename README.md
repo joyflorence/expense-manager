@@ -12,7 +12,7 @@ Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, b
 5. In **Netlify → Site configuration → Environment variables**, add:
    - `DATABASE_URL`: the Neon connection string.
    - `VITE_NEON_AUTH_URL`: the Neon Auth URL. This is intentionally public browser configuration.
-6. In Neon Auth configuration, add your Netlify production URL to the allowed redirect domains and configure email delivery if you require email verification or password reset emails.
+6. In Neon Console → Auth → Configuration → Domains, add every exact browser origin used by the app, including the Netlify production URL and any custom domain. Use `https://...` with no trailing slash. An `Invalid origin` error means the current `window.location.origin` is missing from this list. Configure email delivery if you require email verification or password reset emails.
 7. Deploy. Netlify uses Node 20 and runs `npm install && npm run build`.
 
 Every cashbook record is now protected by Neon Auth identity and a Neon Row-Level Security policy. Each user can only read and change their own records.

@@ -9,6 +9,16 @@ export function AuthPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const currentOrigin = window.location.origin;
+
+  const formatAuthError = (error: { message?: string; status?: number; statusCode?: number }) => {
+    const message = error.message || 'Unable to continue.';
+    const status = error.status || error.statusCode;
+    if (message.toLowerCase().includes('invalid origin')) {
+      return `${message}${status ? ` (HTTP ${status})` : ''} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`;
+    }
+    return `${message}${status ? ` (HTTP ${status})` : ''}`;
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -24,12 +34,15 @@ export function AuthPage() {
         : await authClient.signUp.email({ name, email, password });
       if (result.error) {
         const authError = result.error as { message?: string; status?: number; statusCode?: number };
-        const status = authError.status || authError.statusCode;
-        setMessage(`${authError.message || 'Unable to continue.'}${status ? ` (HTTP ${status})` : ''}`);
+        setMessage(formatAuthError(authError));
       }
       else if (mode === 'sign-up') setMessage('Account created. Check your email if verification is enabled.');
     } catch (error) {
-      setMessage(error instanceof Error ? `Unable to reach Neon Auth: ${error.message}` : 'Unable to reach Neon Auth. Please try again.');
+      setMessage(error instanceof Error
+        ? error.message.toLowerCase().includes('invalid origin')
+          ? `Unable to reach Neon Auth: ${error.message} Add ${currentOrigin} in Neon Console > Auth > Configuration > Domains.`
+          : `Unable to reach Neon Auth: ${error.message}`
+        : 'Unable to reach Neon Auth. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
