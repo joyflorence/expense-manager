@@ -547,13 +547,25 @@ export const DebtView: React.FC<DebtViewProps> = ({
                       <div className="mt-2 space-y-1.5 pl-2 border-l-2 border-emerald-500/40">
                         {debt.repayments.map((rep) => (
                           <div key={rep.id} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>{rep.date}</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Calendar className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="font-medium">{rep.date}</span>
+                              {rep.account && (
+                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  {rep.account === 'bank_account'
+                                    ? '🏦 Bank'
+                                    : rep.account === 'airtel_mobile_money'
+                                    ? '🔴 Airtel'
+                                    : rep.account === 'cash_on_hand'
+                                    ? '💵 Cash'
+                                    : '📱 MTN MoMo'}
+                                </span>
+                              )}
                               {rep.paymentMethod && <span className="text-[10px] text-slate-400">({rep.paymentMethod})</span>}
+                              {rep.notes && <span className="text-[10px] text-slate-500 italic max-w-[150px] truncate">"{rep.notes}"</span>}
                             </div>
-                            <span className="font-extrabold text-slate-900 dark:text-white font-mono">
-                              +{formatUGX(rep.amount)}
+                            <span className={`font-extrabold font-mono shrink-0 ${debt.type === 'borrowed' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              {debt.type === 'borrowed' ? '-' : '+'}{formatUGX(rep.amount)}
                             </span>
                           </div>
                         ))}

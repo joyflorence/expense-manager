@@ -274,12 +274,39 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setSourceBank(bank);
     setRecipientNetwork(net);
     setTitle(defaultTitle);
+    setTransferSourceAccount('bank_account');
+    setTransferDestinationAccount(net.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money');
     if (transferRecipientType === 'self') {
       setCategory('Bank to Mobile Transfer');
     }
     setPaymentMethod('Bank to Mobile Transfer (Bank-to-Wallet)');
     setDeductionSource('bank_account');
     setTaxAmount(500); // Typical bank transfer fee
+  };
+
+  // Quick Preset Helper for MoMo to MoMo Transfers
+  const applyMoMoTransferPreset = (from: 'mtn' | 'airtel', to: 'mtn' | 'airtel') => {
+    setEntryMode('transfer');
+    setTransferRecipientType('self');
+    if (from === 'mtn' && to === 'airtel') {
+      setTransferSourceAccount('mtn_mobile_money');
+      setTransferDestinationAccount('airtel_mobile_money');
+      setRecipientNetwork('Airtel Money (*185#)');
+      setDeductionSource('mtn_mobile_money');
+      setCategory('Mobile Money to Mobile Money Transfer');
+      setPaymentMethod('MTN to Airtel Transfer');
+      setTitle('MTN MoMo to Airtel Money Transfer');
+      setTaxAmount(500);
+    } else {
+      setTransferSourceAccount('airtel_mobile_money');
+      setTransferDestinationAccount('mtn_mobile_money');
+      setRecipientNetwork('MTN Mobile Money (*165#)');
+      setDeductionSource('airtel_mobile_money');
+      setCategory('Mobile Money to Mobile Money Transfer');
+      setPaymentMethod('Airtel to MTN Transfer');
+      setTitle('Airtel Money to MTN MoMo Transfer');
+      setTaxAmount(500);
+    }
   };
 
   useEffect(() => {
@@ -307,10 +334,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       if (
         expenseToEdit.isBankToMobileTransfer ||
         expenseToEdit.paymentMethod === 'Bank to Mobile Transfer (Bank-to-Wallet)' ||
+        expenseToEdit.paymentMethod === 'Mobile Money to Mobile Money Transfer' ||
+        expenseToEdit.paymentMethod === 'MTN to Airtel Transfer' ||
+        expenseToEdit.paymentMethod === 'Airtel to MTN Transfer' ||
         expenseToEdit.category === 'Bank to Mobile Transfer' ||
         expenseToEdit.category === 'Bank to Mobile Money Transfer' ||
+        expenseToEdit.category === 'Mobile Money to Mobile Money Transfer' ||
+        expenseToEdit.category === 'Internal Account Transfer' ||
         expenseToEdit.title.toLowerCase().includes('bank to mobile') ||
-        expenseToEdit.title.toLowerCase().includes('bank to momo')
+        expenseToEdit.title.toLowerCase().includes('bank to momo') ||
+        expenseToEdit.title.toLowerCase().includes('mtn to airtel') ||
+        expenseToEdit.title.toLowerCase().includes('airtel to mtn')
       ) {
         setEntryMode('transfer');
         setTransferRecipientType(expenseToEdit.transferRecipientType || (expenseToEdit.recipientName ? 'third_party' : 'self'));
@@ -319,7 +353,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         setRecipientNetwork(expenseToEdit.recipientMobileNetwork || 'MTN Mobile Money (*165#)');
         setRecipientPhone(expenseToEdit.recipientPhone || '');
         setRefNumber(expenseToEdit.referenceNumber || '');
-        setTransferSourceAccount(expenseToEdit.sourceAccount || 'bank_account');
+        setTransferSourceAccount(expenseToEdit.sourceAccount || (expenseToEdit.paymentMethod === 'Airtel to MTN Transfer' ? 'airtel_mobile_money' : expenseToEdit.paymentMethod === 'MTN to Airtel Transfer' ? 'mtn_mobile_money' : 'bank_account'));
         setTransferDestinationAccount(expenseToEdit.destinationAccount || (expenseToEdit.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money'));
       } else if (expenseToEdit.isSavings || expenseToEdit.category === 'Savings & Investments') {
         setEntryMode('savings');
@@ -348,35 +382,33 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setVendor(expenseToEdit.vendor || '');
       setNotes(expenseToEdit.notes || '');
     } else {
-      setEntryMode(initialMode);
+      // Defaults for brand new entry
       setTitle('');
       setAmount('');
+      setTaxAmount(0);
       setTaxRate(0.0);
-      setTaxAmount(initialMode === 'transfer' ? 500 : 0);
       setPurpose('personal');
-      setCategory(initialMode === 'transfer' ? 'Bank to Mobile Transfer' : initialMode === 'savings' ? 'Savings & Investments' : 'Dining & Meals');
-      setPaymentMethod(
-        initialMode === 'transfer'
-          ? 'Bank to Mobile Transfer (Bank-to-Wallet)'
-          : initialMode === 'cashout'
-          ? 'Mobile Money Cashout'
-          : 'Cash on Hand (From Cashout)'
-      );
-      setDeductionSource(initialMode === 'transfer' ? 'bank_account' : 'cash_on_hand');
-      setTransferSourceAccount('bank_account');
-      setTransferDestinationAccount('mtn_mobile_money');
+      setCategory('Dining & Meals');
+      setPaymentMethod('Cash on Hand (From Cashout)');
+      setDeductionSource('cash_on_hand');
       setDate(new Date().toISOString().slice(0, 10));
       setIsTaxDeductible(false);
-      setCashoutSource('momo');
-      setCashoutWallet('mtn_mobile_money');
       setTransferRecipientType('self');
       setRecipientName('');
       setSourceBank('Equity Bank Uganda');
       setRecipientNetwork('MTN Mobile Money (*165#)');
       setRecipientPhone('');
       setRefNumber('');
+      setTransferSourceAccount('bank_account');
+      setTransferDestinationAccount('mtn_mobile_money');
       setVendor('');
       setNotes('');
+      setCashoutSource('momo');
+      setCashoutWallet('mtn_mobile_money');
+
+      if (initialMode) {
+        setEntryMode(initialMode);
+      }
 
       if (initialMode === 'transfer') {
         setTitle('Bank to MTN Mobile Money Transfer (Self)');
@@ -406,6 +438,52 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const isSavings = entryMode === 'savings';
     const isWithdrawal = entryMode === 'cashout';
 
+    let resolvedCategory: ExpenseCategory = category;
+    let resolvedPaymentMethod: PaymentMethod = paymentMethod;
+    let resolvedDeductionSource: AccountType | undefined = deductionSource;
+    let resolvedVendor = vendor.trim();
+
+    if (isTransfer) {
+      if (isThirdPartyTransfer) {
+        resolvedCategory = category === 'Bank to Mobile Transfer' || category === 'Bank to Mobile Money Transfer'
+          ? 'Family Support & Upkeep'
+          : category;
+        resolvedPaymentMethod = transferSourceAccount === 'bank_account'
+          ? 'Bank Transfer'
+          : 'Mobile Money Transfer';
+        resolvedDeductionSource = transferSourceAccount;
+        resolvedVendor = `${accountLabel(transferSourceAccount)} → ${recipientName.trim() || recipientNetwork}`;
+      } else {
+        // Internal Transfer (Self)
+        if (transferSourceAccount === 'bank_account') {
+          resolvedCategory = 'Bank to Mobile Transfer';
+          resolvedPaymentMethod = 'Bank to Mobile Transfer (Bank-to-Wallet)';
+          resolvedDeductionSource = 'bank_account';
+          resolvedVendor = `${sourceBank} → ${recipientNetwork}`;
+        } else if (transferSourceAccount === 'mtn_mobile_money' && transferDestinationAccount === 'airtel_mobile_money') {
+          resolvedCategory = 'Mobile Money to Mobile Money Transfer';
+          resolvedPaymentMethod = 'MTN to Airtel Transfer';
+          resolvedDeductionSource = 'mtn_mobile_money';
+          resolvedVendor = 'MTN MoMo → Airtel Money';
+        } else if (transferSourceAccount === 'airtel_mobile_money' && transferDestinationAccount === 'mtn_mobile_money') {
+          resolvedCategory = 'Mobile Money to Mobile Money Transfer';
+          resolvedPaymentMethod = 'Airtel to MTN Transfer';
+          resolvedDeductionSource = 'airtel_mobile_money';
+          resolvedVendor = 'Airtel Money → MTN MoMo';
+        } else {
+          resolvedCategory = 'Internal Account Transfer';
+          resolvedPaymentMethod = 'Mobile Money to Mobile Money Transfer';
+          resolvedDeductionSource = transferSourceAccount;
+          resolvedVendor = `${accountLabel(transferSourceAccount)} → ${accountLabel(transferDestinationAccount)}`;
+        }
+      }
+    } else if (isSavings) {
+      resolvedCategory = 'Savings & Investments';
+      resolvedDeductionSource = undefined;
+    } else if (isWithdrawal) {
+      resolvedDeductionSource = cashoutSource === 'momo' ? cashoutWallet : 'bank_account';
+    }
+
     onSave(
       {
         title: title.trim(),
@@ -414,25 +492,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         taxRate,
         totalAmount,
         purpose: isThirdPartyTransfer || entryMode === 'spending' ? purpose : 'personal',
-        category: isThirdPartyTransfer
-          ? category === 'Bank to Mobile Transfer' || category === 'Bank to Mobile Money Transfer'
-            ? 'Family Support & Upkeep'
-            : category
-          : isTransfer
-          ? 'Bank to Mobile Transfer'
-          : isSavings
-          ? 'Savings & Investments'
-          : category,
-        paymentMethod: isTransfer
-          ? 'Bank to Mobile Transfer (Bank-to-Wallet)'
-          : paymentMethod,
-        deductionSource: isTransfer
-          ? 'bank_account'
-          : isSavings
-          ? undefined
-          : isWithdrawal
-          ? cashoutSource === 'momo' ? cashoutWallet : 'bank_account'
-          : deductionSource,
+        category: resolvedCategory,
+        paymentMethod: resolvedPaymentMethod,
+        deductionSource: resolvedDeductionSource,
         date: date || new Date().toISOString().slice(0, 10),
         isTaxDeductible: (purpose === 'work' && (entryMode === 'spending' || isThirdPartyTransfer)) ? isTaxDeductible : false,
         isSavings,
@@ -442,27 +504,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         destinationAccount: isTransfer ? transferDestinationAccount : undefined,
         transferRecipientType: isTransfer ? transferRecipientType : undefined,
         recipientName: recipientName.trim() || undefined,
-        sourceBank: isTransfer ? sourceBank : undefined,
+        sourceBank: isTransfer && transferSourceAccount === 'bank_account' ? sourceBank : undefined,
         recipientMobileNetwork: isTransfer ? recipientNetwork : undefined,
         recipientPhone: recipientPhone.trim() || undefined,
         referenceNumber: refNumber.trim() || undefined,
         transferFee: isTransfer ? numTax : undefined,
-        vendor: isTransfer
-          ? isThirdPartyTransfer
-            ? `${sourceBank} → ${recipientName.trim() || recipientNetwork}`
-            : `${sourceBank} → ${recipientNetwork}`
-          : vendor.trim(),
+        vendor: resolvedVendor,
         notes: notes.trim(),
       },
       expenseToEdit?.id
     );
     onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-200">
-        
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 shrink-0">
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -667,11 +719,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-indigo-100 dark:border-indigo-900/60 shadow-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold">
-                    <Landmark className="w-4 h-4" />
+                    {transferSourceAccount === 'bank_account' ? <Landmark className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold uppercase block">Source Account</span>
-                    <span className="text-xs font-extrabold text-slate-900 dark:text-white">{sourceBank.split(' ')[0]}</span>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                      {transferSourceAccount === 'bank_account' ? sourceBank.split(' ')[0] : transferSourceAccount === 'airtel_mobile_money' ? 'Airtel Money' : 'MTN MoMo'}
+                    </span>
                   </div>
                 </div>
 
@@ -687,7 +741,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     <span className="text-xs font-extrabold text-slate-900 dark:text-white">
                       {transferRecipientType === 'third_party' 
                         ? recipientName || recipientNetwork.split(' ')[0]
-                        : recipientNetwork.split(' ')[0]}
+                        : transferDestinationAccount === 'airtel_mobile_money' ? 'Airtel Money' : 'MTN MoMo'}
                     </span>
                   </div>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${
@@ -708,29 +762,43 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
+                    onClick={() => applyMoMoTransferPreset('mtn', 'airtel')}
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
+                  >
+                    📱 MTN ➔ 🔴 Airtel Money
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyMoMoTransferPreset('airtel', 'mtn')}
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition cursor-pointer"
+                  >
+                    🔴 Airtel ➔ 📱 MTN MoMo
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => applyTransferPreset('Equity Bank Uganda', 'MTN Mobile Money (*165#)', transferRecipientType === 'third_party' ? `Equity to MTN MoMo (${recipientName || 'Third Party'})` : 'Equity Bank to MTN MoMo Push')}
-                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition cursor-pointer"
                   >
                     🏦 Equity ➔ MTN MoMo
                   </button>
                   <button
                     type="button"
                     onClick={() => applyTransferPreset('Equity Bank Uganda', 'Airtel Money (*185#)', transferRecipientType === 'third_party' ? `Equity to Airtel Money (${recipientName || 'Third Party'})` : 'Equity Bank to Airtel Money Push')}
-                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition cursor-pointer"
                   >
                     🏦 Equity ➔ Airtel Money
                   </button>
                   <button
                     type="button"
                     onClick={() => applyTransferPreset('Stanbic Bank Uganda', 'MTN Mobile Money (*165#)', transferRecipientType === 'third_party' ? `Stanbic to MTN MoMo (${recipientName || 'Third Party'})` : 'Stanbic FlexiPay to MTN MoMo')}
-                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition cursor-pointer"
                   >
                     🏦 Stanbic ➔ MTN MoMo
                   </button>
                   <button
                     type="button"
                     onClick={() => applyTransferPreset('Centenary Bank', 'Airtel Money (*185#)', transferRecipientType === 'third_party' ? `Centenary to Airtel (${recipientName || 'Third Party'})` : 'CenteMobile to Airtel Money')}
-                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+                    className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition cursor-pointer"
                   >
                     🏦 Centenary ➔ Airtel
                   </button>
@@ -908,7 +976,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
               </div>
 
-              {/* Accounting rule banner dynamically adapting to Self vs Third-Party */}
               <div className={`p-3 rounded-xl border text-xs space-y-1 ${
                 transferRecipientType === 'third_party'
                   ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-200'
@@ -922,18 +989,25 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   )}
                   {transferRecipientType === 'third_party'
                     ? 'Third-Party Expense Accounting Rule'
-                    : 'Bank Deduction & Wallet Inflow Rule'}
+                    : transferSourceAccount === 'bank_account'
+                    ? 'Bank Deduction & Wallet Inflow Rule'
+                    : 'Mobile Money to Mobile Money Transfer Rule'}
                 </div>
                 <p className="text-[11px] leading-relaxed">
                   {transferRecipientType === 'third_party' ? (
                     <>
-                      ✓ <strong>UGX {totalAmount.toLocaleString()}</strong> (Principal + Bank Fee) will be <strong>deducted from your Bank Account</strong> and <strong>logged as an Expense</strong> under <strong>{category}</strong>.<br />
-                      ✓ This will count toward your monthly spending and budget tracking (NOT added to your personal MoMo wallet).
+                      ✓ <strong>UGX {totalAmount.toLocaleString()}</strong> (Principal + Fee) will be <strong>deducted from your {accountLabel(transferSourceAccount)}</strong> and <strong>logged as an Expense</strong> under <strong>{category}</strong>.<br />
+                      ✓ This will count toward your monthly spending and budget tracking.
+                    </>
+                  ) : transferSourceAccount === 'bank_account' ? (
+                    <>
+                      ✓ <strong>UGX {totalAmount.toLocaleString()}</strong> will be <strong>deducted from your Bank Account</strong> (Principal + transfer fee).<br />
+                      ✓ <strong>UGX {numAmount.toLocaleString()}</strong> will be <strong>credited into your {accountLabel(transferDestinationAccount)}</strong>.
                     </>
                   ) : (
                     <>
-                      ✓ <strong>UGX {totalAmount.toLocaleString()}</strong> will be <strong>deducted from your Overall Available Money in the Bank</strong> (Principal + transfer charge).<br />
-                      ✓ <strong>UGX {numAmount.toLocaleString()}</strong> will be <strong>credited directly into your Mobile Money Wallet</strong> available for airtime, data bundles, and cashouts.
+                      ✓ <strong>UGX {totalAmount.toLocaleString()}</strong> will be <strong>deducted from your {accountLabel(transferSourceAccount)}</strong> (Principal + sending fee).<br />
+                      ✓ <strong>UGX {numAmount.toLocaleString()}</strong> will be <strong>credited directly into your {accountLabel(transferDestinationAccount)}</strong>.
                     </>
                   )}
                 </p>

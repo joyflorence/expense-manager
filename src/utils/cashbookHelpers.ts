@@ -1,13 +1,23 @@
-import { Expense, MonthlyBudget, Inflow } from '../types';
+import { Expense, MonthlyBudget, Inflow, DebtItem, AccountType } from '../types';
 
 /**
- * Check if an expense entry is a Bank to Mobile Money transfer
+ * Check if an expense entry is a Bank to Mobile Money transfer or internal account transfer
  */
 export function isBankToMobileTransfer(e: Expense): boolean {
   if (e.sourceAccount && e.destinationAccount) return true;
   if (e.isBankToMobileTransfer) return true;
-  if (e.paymentMethod === 'Bank to Mobile Transfer (Bank-to-Wallet)') return true;
-  if (e.category === 'Bank to Mobile Transfer' || e.category === 'Bank to Mobile Money Transfer') return true;
+  if (
+    e.paymentMethod === 'Bank to Mobile Transfer (Bank-to-Wallet)' ||
+    e.paymentMethod === 'Mobile Money to Mobile Money Transfer' ||
+    e.paymentMethod === 'MTN to Airtel Transfer' ||
+    e.paymentMethod === 'Airtel to MTN Transfer'
+  ) return true;
+  if (
+    e.category === 'Bank to Mobile Transfer' ||
+    e.category === 'Bank to Mobile Money Transfer' ||
+    e.category === 'Mobile Money to Mobile Money Transfer' ||
+    e.category === 'Internal Account Transfer'
+  ) return true;
   const title = (e.title || '').toLowerCase();
   const notes = (e.notes || '').toLowerCase();
   return (
@@ -17,7 +27,11 @@ export function isBankToMobileTransfer(e: Expense): boolean {
     title.includes('bank-to-wallet') ||
     title.includes('bank to airtel') ||
     title.includes('bank to mtn') ||
-    notes.includes('bank to mobile')
+    title.includes('mtn to airtel') ||
+    title.includes('airtel to mtn') ||
+    title.includes('momo to momo') ||
+    notes.includes('bank to mobile') ||
+    notes.includes('momo transfer')
   );
 }
 
@@ -28,8 +42,7 @@ export function isInternalTransfer(e: Expense): boolean {
 }
 
 /**
- * Check if an expense is an internal transfer to oneself (Own MoMo Wallet)
- * (Shifts liquidity from Bank -> Own MoMo without being an expense)
+ * Check if an expense is an internal transfer to oneself (Own MoMo Wallet or between accounts)
  */
 export function isSelfBankToMobileTransfer(e: Expense): boolean {
   return isInternalTransfer(e);
@@ -44,7 +57,8 @@ export function isThirdPartyTransferExpense(e: Expense): boolean {
   if (
     (e.paymentMethod === 'Mobile Money Transfer' || e.paymentMethod === 'Bank Transfer') &&
     e.transferRecipientType !== 'self' &&
-    e.category !== 'Bank to Mobile Transfer'
+    e.category !== 'Bank to Mobile Transfer' &&
+    e.category !== 'Mobile Money to Mobile Money Transfer'
   ) {
     return true;
   }
@@ -133,18 +147,20 @@ export interface CashbookBalances {
   totalMtnInflows: number;
   totalAirtelInflows: number;
   totalCashInflows: number; // Inflows received directly in cash
-  totalCombinedInflow: number; // Bank + MoMo + Cash Inflow
+  totalCombinedInflow: number; // Bank + MoMo + Cash Inflow + Debt Repayments Received
   totalLoggedGrossInflow: number; // Gross Inflows before taxes
   totalLoggedNetInflow: number; // Net Inflows received
   totalInflowsLogged: number; // Alias for totalLoggedNetInflow
   totalInflowTaxDeducted: number; // Withholding / PAYE deducted at source
 
-  // Bank to Mobile Transfers (Internal to Self)
+  // Internal Transfers
   bankToMobileEntries: Expense[];
   totalBankToMobileTransferred: number; // Total transferred out of Bank (+ fees) -> Deducted from Bank
   totalBankToMobileReceivedInMoMo: number; // Principal amount credited to MoMo Wallet
   totalMtnReceived: number;
   totalAirtelReceived: number;
+  totalMtnToAirtelTransferred: number;
+  totalAirtelToMtnTransferred: number;
 
   // Direct Bank Spendings / ATM cashouts (paid directly from bank)
   directBankSpendings: number;
@@ -161,8 +177,23 @@ export interface CashbookBalances {
   // Savings
   totalSavings: number;
 
+  // Debt Repayments Paid (Liabilities Outflow) & Received (Assets Collected)
+  totalDebtRepaymentsPaid: number;
+  bankDebtRepaymentsPaid: number;
+  momoDebtRepaymentsPaid: number;
+  mtnDebtRepaymentsPaid: number;
+  airtelDebtRepaymentsPaid: number;
+  cashDebtRepaymentsPaid: number;
+
+  totalDebtRepaymentsReceived: number;
+  bankDebtRepaymentsReceived: number;
+  momoDebtRepaymentsReceived: number;
+  mtnDebtRepaymentsReceived: number;
+  airtelDebtRepaymentsReceived: number;
+  cashDebtRepaymentsReceived: number;
+
   // Outflows & Net Cashflow
-  totalCombinedOutflows: number; // All real expenses & transaction fees spent
+  totalCombinedOutflows: number; // All real expenses, debt repayments & transaction fees spent
   netCashflow: number; // Inflows - Outflows
 
   // Final Available Balances
@@ -175,13 +206,14 @@ export interface CashbookBalances {
 }
 
 /**
- * Master Financial Calculator for Cashbook, Bank Balance, MoMo Wallet, Cash Drawer, and Inflows
+ * Master Financial Calculator for Cashbook, Bank Balance, MoMo Wallet, Cash Drawer, Inflows, and Debt Payments
  */
 export function calculateCashbookBalances(
   expenses: Expense[],
   budget: MonthlyBudget,
   recordedMonthsCount = 1,
-  inflows: Inflow[] = []
+  inflows: Inflow[] = [],
+  debts: DebtItem[] = []
 ): CashbookBalances {
   const grossSalary = (budget?.monthlySalary ?? 500000) * recordedMonthsCount;
   const localTax = (budget?.localTax !== undefined ? budget.localTax : 15000) * recordedMonthsCount;
@@ -211,19 +243,94 @@ export function calculateCashbookBalances(
   const totalMtnInflows = loggedMtnInflows;
   const totalAirtelInflows = loggedAirtelInflows;
   const totalCashInflows = loggedCashInflows;
-  const totalCombinedInflow = totalBankInflows + totalMoMoInflows + totalCashInflows;
 
-  // 1. Bank to Mobile Money Internal Transfers (Transferred to Self)
-  const selfBankToMobileEntries = expenses.filter((e) => isInternalTransfer(e));
-  const bankTransferEntries = selfBankToMobileEntries.filter((e) => (e.sourceAccount || 'bank_account') === 'bank_account');
-  // Total cost deducted from Bank (Principal + Bank Transfer Fee / Tax)
+  // 1. Process Debt Repayments
+  // A. Borrowed debts: Repayments made (Money leaving account to repay someone)
+  let bankDebtRepaymentsPaid = 0;
+  let mtnDebtRepaymentsPaid = 0;
+  let airtelDebtRepaymentsPaid = 0;
+  let cashDebtRepaymentsPaid = 0;
+
+  // B. Lent debts: Repayments collected (Money entering account from borrower)
+  let bankDebtRepaymentsReceived = 0;
+  let mtnDebtRepaymentsReceived = 0;
+  let airtelDebtRepaymentsReceived = 0;
+  let cashDebtRepaymentsReceived = 0;
+
+  for (const debt of debts) {
+    for (const rep of debt.repayments || []) {
+      const amount = Number(rep.amount) || 0;
+      if (amount <= 0) continue;
+
+      const acct: AccountType = rep.account || (
+        rep.paymentMethod === 'Bank Transfer' || rep.paymentMethod === 'Bank Direct / Card Online'
+          ? 'bank_account'
+          : rep.paymentMethod === 'Cash' || rep.paymentMethod === 'Cash on Hand (From Cashout)'
+          ? 'cash_on_hand'
+          : rep.paymentMethod === 'Airtel to MTN Transfer'
+          ? 'airtel_mobile_money'
+          : 'mtn_mobile_money'
+      );
+
+      if (debt.type === 'borrowed') {
+        if (acct === 'bank_account') bankDebtRepaymentsPaid += amount;
+        else if (acct === 'airtel_mobile_money') airtelDebtRepaymentsPaid += amount;
+        else if (acct === 'cash_on_hand') cashDebtRepaymentsPaid += amount;
+        else mtnDebtRepaymentsPaid += amount;
+      } else if (debt.type === 'lent') {
+        if (acct === 'bank_account') bankDebtRepaymentsReceived += amount;
+        else if (acct === 'airtel_mobile_money') airtelDebtRepaymentsReceived += amount;
+        else if (acct === 'cash_on_hand') cashDebtRepaymentsReceived += amount;
+        else mtnDebtRepaymentsReceived += amount;
+      }
+    }
+  }
+
+  const momoDebtRepaymentsPaid = mtnDebtRepaymentsPaid + airtelDebtRepaymentsPaid;
+  const totalDebtRepaymentsPaid = bankDebtRepaymentsPaid + momoDebtRepaymentsPaid + cashDebtRepaymentsPaid;
+
+  const momoDebtRepaymentsReceived = mtnDebtRepaymentsReceived + airtelDebtRepaymentsReceived;
+  const totalDebtRepaymentsReceived = bankDebtRepaymentsReceived + momoDebtRepaymentsReceived + cashDebtRepaymentsReceived;
+
+  const totalCombinedInflow = totalBankInflows + totalMoMoInflows + totalCashInflows + totalDebtRepaymentsReceived;
+
+  // 2. Internal Transfers (Bank to Mobile Money, MoMo to MoMo)
+  const selfInternalTransfers = expenses.filter((e) => isInternalTransfer(e));
+  
+  // Bank to Mobile Transfers
+  const bankTransferEntries = selfInternalTransfers.filter(
+    (e) => (e.sourceAccount || 'bank_account') === 'bank_account'
+  );
   const totalBankToMobileTransferred = bankTransferEntries.reduce((sum, e) => sum + e.totalAmount, 0);
-  // Total amount credited into Mobile Money wallet
-  const totalBankToMobileReceivedInMoMo = selfBankToMobileEntries.reduce((sum, e) => sum + e.amount, 0);
-  const totalMtnReceived = selfBankToMobileEntries.filter((e) => (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'mtn_mobile_money').reduce((sum, e) => sum + e.amount, 0);
-  const totalAirtelReceived = selfBankToMobileEntries.filter((e) => (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'airtel_mobile_money').reduce((sum, e) => sum + e.amount, 0);
+  const totalBankToMobileReceivedInMoMo = bankTransferEntries.reduce((sum, e) => sum + e.amount, 0);
 
-  // 2. Direct Bank spendings, Third-Party Transfers from Bank, & ATM Card Cashouts
+  const bankToMtnEntries = bankTransferEntries.filter(
+    (e) => (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'mtn_mobile_money'
+  );
+  const bankToMtn = bankToMtnEntries.reduce((sum, e) => sum + e.amount, 0);
+
+  const bankToAirtelEntries = bankTransferEntries.filter(
+    (e) => (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'airtel_mobile_money'
+  );
+  const bankToAirtel = bankToAirtelEntries.reduce((sum, e) => sum + e.amount, 0);
+
+  // MoMo to MoMo Transfers
+  const mtnToAirtelEntries = selfInternalTransfers.filter(
+    (e) => e.sourceAccount === 'mtn_mobile_money' && e.destinationAccount === 'airtel_mobile_money'
+  );
+  const mtnToAirtelPrincipal = mtnToAirtelEntries.reduce((sum, e) => sum + e.amount, 0);
+  const mtnToAirtelTotalDeducted = mtnToAirtelEntries.reduce((sum, e) => sum + e.totalAmount, 0);
+
+  const airtelToMtnEntries = selfInternalTransfers.filter(
+    (e) => e.sourceAccount === 'airtel_mobile_money' && e.destinationAccount === 'mtn_mobile_money'
+  );
+  const airtelToMtnPrincipal = airtelToMtnEntries.reduce((sum, e) => sum + e.amount, 0);
+  const airtelToMtnTotalDeducted = airtelToMtnEntries.reduce((sum, e) => sum + e.totalAmount, 0);
+
+  const totalMtnReceived = bankToMtn + airtelToMtnPrincipal;
+  const totalAirtelReceived = bankToAirtel + mtnToAirtelPrincipal;
+
+  // 3. Direct Bank Spendings & ATM Card Cashouts
   const directBankEntries = expenses.filter(
     (e) =>
       !isInternalTransfer(e) &&
@@ -246,11 +353,11 @@ export function calculateCashbookBalances(
   );
   const atmCashouts = atmCashoutEntries.reduce((sum, e) => sum + e.totalAmount, 0);
 
-  // 3. Mobile Money Outflows (Direct airtime/data/bills, Third-Party MoMo Transfers & MoMo cashouts)
+  // 4. Mobile Money Outflows (Direct airtime/data/bills, Third-Party MoMo Transfers & MoMo cashouts)
   const momoDirectEntries = expenses.filter((e) => {
     if (isInternalTransfer(e) || isWithdrawalEntry(e) || isSavingsEntry(e)) return false;
-    if (e.deductionSource === 'bank_account' || (isBankToMobileTransfer(e) && e.transferRecipientType === 'third_party')) {
-      return false; // Handled under Bank direct deductions
+    if (e.deductionSource === 'bank_account' || (isBankToMobileTransfer(e) && e.transferRecipientType === 'third_party' && (e.sourceAccount === 'bank_account' || !e.sourceAccount))) {
+      return false;
     }
     return (
       e.deductionSource === 'mobile_money_bank' ||
@@ -276,48 +383,58 @@ export function calculateCashbookBalances(
   const momoCashouts = momoCashoutEntries.reduce((sum, e) => sum + e.totalAmount, 0);
   const bankCashouts = expenses.filter((e) => isWithdrawalEntry(e) && e.deductionSource === 'bank_account').reduce((sum, e) => sum + e.totalAmount, 0);
 
-  // 4. Cash Drawer Inflow & Outflow
+  // 5. Cash Drawer Inflow & Outflow
   const allCashoutEntries = expenses.filter((e) => isWithdrawalEntry(e));
   const totalCashoutsReceived = allCashoutEntries.reduce((sum, e) => sum + e.amount, 0);
 
   const cashSpendingEntries = expenses.filter((e) => isCashOnHandSpending(e));
   const totalCashSpendings = cashSpendingEntries.reduce((sum, e) => sum + e.totalAmount, 0);
 
-  // 5. Savings
+  // 6. Savings
   const savingsEntries = expenses.filter((e) => isSavingsEntry(e));
   const totalSavings = savingsEntries.reduce(
     (sum, e) => sum + Math.max(0, e.amount - (e.taxAmount || 0)),
     0
   );
 
-  // 6. Running Balances
-  // Bank Account Balance = Bank Inflows - Bank to Mobile Transfers (Self) - Direct Bank Payments (including Third-Party Transfers) - ATM Card Cashouts
-  const bankToMtn = selfBankToMobileEntries.filter((e) => (e.sourceAccount || 'bank_account') === 'bank_account' && (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'mtn_mobile_money').reduce((sum, e) => sum + e.amount, 0);
-  const bankToAirtel = selfBankToMobileEntries.filter((e) => (e.sourceAccount || 'bank_account') === 'bank_account' && (e.destinationAccount || (e.recipientMobileNetwork?.toLowerCase().includes('airtel') ? 'airtel_mobile_money' : 'mtn_mobile_money')) === 'airtel_mobile_money').reduce((sum, e) => sum + e.amount, 0);
-  const mtnToAirtel = selfBankToMobileEntries.filter((e) => e.sourceAccount === 'mtn_mobile_money' && e.destinationAccount === 'airtel_mobile_money').reduce((sum, e) => sum + e.amount, 0);
-  const airtelToMtn = selfBankToMobileEntries.filter((e) => e.sourceAccount === 'airtel_mobile_money' && e.destinationAccount === 'mtn_mobile_money').reduce((sum, e) => sum + e.amount, 0);
+  // 7. Wallet Spendings breakdown
   const isAirtelEntry = (e: Expense) => `${e.title} ${e.vendor || ''} ${e.recipientMobileNetwork || ''}`.toLowerCase().includes('airtel');
-  const mtnSpent = momoDirectEntries.filter((e) => e.deductionSource === 'mtn_mobile_money' || (!e.deductionSource || e.deductionSource === 'mobile_money' || e.deductionSource === 'mobile_money_bank') && !isAirtelEntry(e)).reduce((sum, e) => sum + e.totalAmount, 0);
+  const mtnSpent = momoDirectEntries.filter((e) => e.deductionSource === 'mtn_mobile_money' || ((!e.deductionSource || e.deductionSource === 'mobile_money' || e.deductionSource === 'mobile_money_bank') && !isAirtelEntry(e))).reduce((sum, e) => sum + e.totalAmount, 0);
   const airtelSpent = momoDirectEntries.filter((e) => e.deductionSource === 'airtel_mobile_money' || isAirtelEntry(e)).reduce((sum, e) => sum + e.totalAmount, 0);
   const mtnCashouts = momoCashoutEntries.filter((e) => e.deductionSource === 'mtn_mobile_money' || (!e.deductionSource && !isAirtelEntry(e))).reduce((sum, e) => sum + e.totalAmount, 0);
   const airtelCashouts = momoCashoutEntries.filter((e) => e.deductionSource === 'airtel_mobile_money' || isAirtelEntry(e)).reduce((sum, e) => sum + e.totalAmount, 0);
+
+  // 8. Final Available Balances
+  // Bank Balance = Inflows + Debt Repayments Collected - Transfers Out - Direct Bank Spends - ATM Cashouts - Debt Repayments Paid
   const availableBankBalance = Math.max(
     0,
-    totalBankInflows - totalBankToMobileTransferred - directBankSpendings - bankCashouts
+    totalBankInflows + bankDebtRepaymentsReceived - totalBankToMobileTransferred - directBankSpendings - bankCashouts - bankDebtRepaymentsPaid
   );
 
-  // Mobile Money Balance = Direct MoMo Inflows + Bank to Mobile Transfers In (Self) - MoMo Direct Spends (Airtime, Data, Bills, MoMo Transfers) - MoMo Cashouts
-  const availableMtnBalance = Math.max(0, totalMtnInflows + bankToMtn + airtelToMtn - mtnSpent - mtnCashouts);
-  const availableAirtelBalance = Math.max(0, totalAirtelInflows + bankToAirtel + mtnToAirtel - airtelSpent - airtelCashouts);
+  // MTN MoMo Balance = Inflows + Debt Repayments Collected + Bank In + Airtel In - MoMo Spends - MoMo Cashouts - Transfers to Airtel - Debt Repayments Paid
+  const availableMtnBalance = Math.max(
+    0,
+    totalMtnInflows + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnToAirtelTotalDeducted - mtnDebtRepaymentsPaid
+  );
+
+  // Airtel Money Balance = Inflows + Debt Repayments Collected + Bank In + MTN In - MoMo Spends - MoMo Cashouts - Transfers to MTN - Debt Repayments Paid
+  const availableAirtelBalance = Math.max(
+    0,
+    totalAirtelInflows + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelDebtRepaymentsPaid
+  );
+
   const availableMobileMoneyBalance = Math.max(0, availableMtnBalance + availableAirtelBalance);
 
-  // Cash on Hand Drawer = Direct Cash Inflows + Cashouts Received - Cash Spent
-  const availableCashOnHand = totalCashInflows + totalCashoutsReceived - totalCashSpendings;
+  // Cash on Hand Drawer = Inflows + Debt Repayments Collected + Cashouts Received - Cash Spent - Debt Repayments Paid
+  const availableCashOnHand = Math.max(
+    0,
+    totalCashInflows + cashDebtRepaymentsReceived + totalCashoutsReceived - totalCashSpendings - cashDebtRepaymentsPaid
+  );
 
-  // Total Outflows (Direct Bank spend + MoMo spend + Cash spend + Transfer fees + Cashout fees)
-  const transferFees = selfBankToMobileEntries.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
+  // Total Outflows (Direct Bank spend + MoMo spend + Cash spend + Transfer fees + Cashout fees + Debt Repayments Paid)
+  const transferFees = selfInternalTransfers.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
   const cashoutFees = allCashoutEntries.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
-  const totalCombinedOutflows = directBankSpendings + momoDirectSpendings + totalCashSpendings + transferFees + cashoutFees;
+  const totalCombinedOutflows = directBankSpendings + momoDirectSpendings + totalCashSpendings + transferFees + cashoutFees + totalDebtRepaymentsPaid;
 
   const netCashflow = totalCombinedInflow - totalCombinedOutflows;
 
@@ -342,11 +459,13 @@ export function calculateCashbookBalances(
     totalLoggedNetInflow,
     totalInflowsLogged: totalLoggedNetInflow,
     totalInflowTaxDeducted,
-    bankToMobileEntries: selfBankToMobileEntries,
+    bankToMobileEntries: selfInternalTransfers,
     totalBankToMobileTransferred,
     totalBankToMobileReceivedInMoMo,
     totalMtnReceived,
     totalAirtelReceived,
+    totalMtnToAirtelTransferred: mtnToAirtelPrincipal,
+    totalAirtelToMtnTransferred: airtelToMtnPrincipal,
     directBankSpendings,
     atmCashouts,
     momoDirectSpendings,
@@ -354,6 +473,18 @@ export function calculateCashbookBalances(
     totalCashoutsReceived,
     totalCashSpendings,
     totalSavings,
+    totalDebtRepaymentsPaid,
+    bankDebtRepaymentsPaid,
+    momoDebtRepaymentsPaid,
+    mtnDebtRepaymentsPaid,
+    airtelDebtRepaymentsPaid,
+    cashDebtRepaymentsPaid,
+    totalDebtRepaymentsReceived,
+    bankDebtRepaymentsReceived,
+    momoDebtRepaymentsReceived,
+    mtnDebtRepaymentsReceived,
+    airtelDebtRepaymentsReceived,
+    cashDebtRepaymentsReceived,
     totalCombinedOutflows,
     netCashflow,
     availableBankBalance,

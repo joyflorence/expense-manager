@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Expense, MonthlyBudget, Inflow } from '../types';
+import { Expense, MonthlyBudget, Inflow, DebtItem } from '../types';
 import { formatUGX } from '../utils/format';
 import {
   calculateCashbookBalances,
@@ -33,6 +33,7 @@ import {
 interface DailyExpenseTrackerProps {
   expenses: Expense[];
   inflows?: Inflow[];
+  debts?: DebtItem[];
   budget: MonthlyBudget;
   selectedMonth: string;
   onOpenExpenseModal: (mode?: 'spending' | 'transfer' | 'cashout' | 'savings') => void;
@@ -43,6 +44,7 @@ interface DailyExpenseTrackerProps {
 export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
   expenses,
   inflows = [],
+  debts = [],
   budget,
   selectedMonth,
   onOpenExpenseModal,
@@ -75,8 +77,8 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
     ? Math.max(1, new Set(expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08'))).size)
     : 1;
 
-  // Comprehensive financial cashbook calculation including cash inflows
-  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows);
+  // Comprehensive financial cashbook calculation including cash inflows and debt repayments
+  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
 
   // Selected date expenses
   const selectedDayExpenses = expenses.filter((e) => e.date === selectedDate);

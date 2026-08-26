@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Expense, MonthlyBudget, Inflow } from '../types';
+import { Expense, MonthlyBudget, Inflow, DebtItem } from '../types';
 import { formatUGX } from '../utils/format';
 import {
   calculateCashbookBalances,
@@ -42,6 +42,7 @@ import {
 interface AnalyticsViewProps {
   expenses: Expense[];
   inflows?: Inflow[];
+  debts?: DebtItem[];
   budget: MonthlyBudget;
   selectedMonth: string;
 }
@@ -60,6 +61,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Shopping & Personal': '#e11d48', // Rose
   'Savings & Investments': '#10b981', // Emerald
   'Bank to Mobile Transfer': '#6366f1', // Indigo
+  'Mobile Money to Mobile Money Transfer': '#06b6d4', // Cyan
+  'Internal Account Transfer': '#6366f1',
   'Salary Inflow': '#10b981',
   'Cashout Inflow': '#f59e0b',
   'Other': '#64748b', // Slate
@@ -68,6 +71,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   expenses,
   inflows = [],
+  debts = [],
   budget,
   selectedMonth,
 }) => {
@@ -80,7 +84,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     : 1;
 
   // Master Financial Balances
-  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows);
+  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
 
   // Gross Salary, Local Tax & Net Income Baseline
   const grossSalary = (budget?.monthlySalary ?? 500000) * recordedMonthsCount;

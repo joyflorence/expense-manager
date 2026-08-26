@@ -76,8 +76,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     ? Math.max(1, new Set(expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08'))).size)
     : 1;
 
-  // Master Financial Balances (including tracked Cash Inflows)
-  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows);
+  // Master Financial Balances (including tracked Cash Inflows and Debt Repayments)
+  const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
 
   // Grouped transaction lists
   const bankToMobileEntries = balances.bankToMobileEntries;
@@ -166,6 +166,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <DailyExpenseTracker
         expenses={expenses}
         inflows={inflows}
+        debts={debts}
         budget={budget}
         selectedMonth={selectedMonth}
         onOpenExpenseModal={onOpenExpenseModal}

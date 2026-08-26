@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut, ArrowLeft, RotateCcw } from 'lucide-react';
-import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod } from './types';
+import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod, AccountType } from './types';
 import { INITIAL_EXPENSES, INITIAL_BUDGETS, INITIAL_DEBTS, INITIAL_INFLOWS } from './data/mockData';
 import { Navbar, ViewTab } from './components/Navbar';
 import { OverviewView } from './components/OverviewView';
@@ -441,7 +441,8 @@ export default function App() {
     amount: number,
     date: string,
     paymentMethod: PaymentMethod | undefined,
-    notes: string
+    notes: string,
+    account: AccountType
   ) => {
     const debt = debts.find((item) => item.id === debtId);
     if (!debt || !isPositiveAmount(amount) || amount > Math.max(0, debt.originalAmount - debt.repaidAmount)) {
@@ -460,6 +461,7 @@ export default function App() {
             amount,
             date,
             paymentMethod,
+            account,
             notes,
           },
         ];
@@ -678,6 +680,7 @@ export default function App() {
           <AnalyticsView
             expenses={currentMonthExpenses}
             inflows={currentMonthInflows}
+            debts={debts}
             budget={currentBudget}
             selectedMonth={selectedMonth}
           />

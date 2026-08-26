@@ -1,6 +1,16 @@
 export type PurposeType = 'work' | 'personal';
 export type AccountType = 'bank_account' | 'mtn_mobile_money' | 'airtel_mobile_money' | 'cash_on_hand' | 'mobile_money';
 
+export type DateFilterMode = 'all' | 'month' | 'day' | 'range' | 'today' | 'this_week';
+
+export interface DateFilterState {
+  mode: DateFilterMode;
+  selectedMonth: string; // 'YYYY-MM' or 'all'
+  selectedDay: string; // 'YYYY-MM-DD'
+  startDate: string; // 'YYYY-MM-DD'
+  endDate: string; // 'YYYY-MM-DD'
+}
+
 export type InflowCategory =
   | 'Salary & Wages'
   | 'Freelance & Gigs'
@@ -36,6 +46,8 @@ export interface Inflow {
 export type ExpenseCategory =
   | 'Bank to Mobile Transfer'
   | 'Bank to Mobile Money Transfer'
+  | 'Mobile Money to Mobile Money Transfer'
+  | 'Internal Account Transfer'
   | 'Family Support & Upkeep'
   | 'Airtime, Data & Minutes'
   | 'Software & Tools'
@@ -55,6 +67,9 @@ export type ExpenseCategory =
 
 export type PaymentMethod =
   | 'Bank to Mobile Transfer (Bank-to-Wallet)'
+  | 'Mobile Money to Mobile Money Transfer'
+  | 'MTN to Airtel Transfer'
+  | 'Airtel to MTN Transfer'
   | 'Mobile Money Direct (Airtime/Data/Pay)'
   | 'Bank Direct / Card Online'
   | 'Mobile Money Cashout'
@@ -118,6 +133,8 @@ export interface DebtRepayment {
   amount: number;
   date: string; // YYYY-MM-DD
   paymentMethod?: PaymentMethod;
+  account?: AccountType; // Where repayment was deducted from (borrowed) or deposited into (lent)
+  referenceNumber?: string;
   notes?: string;
 }
 
