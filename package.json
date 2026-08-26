@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@neondatabase/auth": "^0.2.0",
+    "@neondatabase/auth": "^0.1.0-beta.21",
     "@neondatabase/serverless": "^1.0.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
@@ -20,7 +20,6 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "recharts": "^3.10.1",
-    "vite": "^6.2.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
