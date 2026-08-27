@@ -78,11 +78,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 }) => {
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // Scope month count
+  // Reports & Statements use the actual monthly salary baseline, not salary multiplied by months.
   const isAllTime = selectedMonth === 'all';
-  const recordedMonthsCount = isAllTime
-    ? Math.max(1, new Set(expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08'))).size)
-    : 1;
+  const recordedMonthsCount = 1;
 
   // Master Financial Balances
   const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
