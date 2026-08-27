@@ -13,6 +13,7 @@ import { BudgetModal } from './components/BudgetModal';
 import { DebtModal } from './components/DebtModal';
 import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
+import { MobileNavigation } from './components/MobileNavigation';
 import { CashbookState, loadCashbook, saveRecord, deleteRecord, RecordKind } from './api';
 import { supabase, useSupabaseSession } from './auth';
 import { AuthPage } from './components/AuthPage';
@@ -643,7 +644,7 @@ export default function App() {
       )}
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-28 md:py-6 md:pb-20">
         {currentTab === 'overview' && (
           <OverviewView
             expenses={currentFilteredExpenses}
@@ -728,7 +729,7 @@ export default function App() {
       </main>
 
       {/* Footer Status Bar with Quick Action */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 py-2 text-[11px] text-slate-500 font-mono flex flex-wrap items-center justify-between gap-2">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 hidden bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 py-2 text-[11px] text-slate-500 font-mono md:flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -775,6 +776,16 @@ export default function App() {
           <span className="text-slate-600 dark:text-slate-400 font-semibold">OMNITRACK.CASH V2.4.0</span>
         </div>
       </footer>
+
+      <MobileNavigation
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        onAddExpense={() => {
+          setExpenseToEdit(null);
+          setExpenseModalInitialMode('spending');
+          setIsExpenseModalOpen(true);
+        }}
+      />
 
       {/* Modals */}
       <ExpenseModal

@@ -130,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={handleRefreshClick}
               title="Refresh Data"
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+              className="hidden sm:block p-2 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isSpinning ? 'animate-spin text-emerald-500' : ''}`} />
             </button>
@@ -139,13 +139,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onToggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+              className="hidden sm:block p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
             </button>
 
             {/* Settings & Extra Controls */}
-            <div className="flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-800 pl-1.5 ml-0.5">
+            <div className="hidden md:flex items-center gap-0.5 border-l border-slate-200 dark:border-slate-800 pl-1.5 ml-0.5">
               <button
                 onClick={onOpenBudgetModal}
                 title="Monthly Budget & Salary Settings"
@@ -211,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setFilterMode('day')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`hidden sm:flex px-3 py-1.5 rounded-lg font-bold transition items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 dateFilter.mode === 'day'
                   ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -237,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setFilterMode('range')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`hidden sm:flex px-3 py-1.5 rounded-lg font-bold transition items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 dateFilter.mode === 'range'
                   ? 'bg-slate-900 text-white dark:bg-emerald-600 shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -333,7 +333,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm font-medium">
+        <div className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm font-medium">
           <button
             onClick={() => onTabChange('overview')}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
@@ -386,5 +386,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-
 
