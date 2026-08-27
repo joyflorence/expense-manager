@@ -78,9 +78,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 }) => {
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // Reports & Statements use the actual monthly salary baseline, not salary multiplied by months.
+  // Scope month count
   const isAllTime = selectedMonth === 'all';
-  const recordedMonthsCount = 1;
+  const recordedMonthsCount = isAllTime
+    ? Math.max(1, new Set(expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08'))).size)
+    : 1;
+  const reportScopeLabel = `${recordedMonthsCount} ${recordedMonthsCount === 1 ? 'month' : 'months'}`;
 
   // Master Financial Balances
   const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
@@ -204,7 +207,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                1. Bank Balance
+                1. Net Worth ({reportScopeLabel})
               </span>
               <Landmark className="w-4 h-4 text-slate-400" />
             </div>
@@ -212,7 +215,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               {formatUGX(balances.availableBankBalance)}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
-              Net {formatUGX(balances.netIncome)} less {formatUGX(balances.totalBankToMobileTransferred)} transferred
+              Bank position calculated across {reportScopeLabel}
             </div>
           </div>
 
