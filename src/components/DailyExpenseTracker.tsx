@@ -8,6 +8,7 @@ import {
   isWithdrawalEntry,
   isDirectDigitalEntry,
   isCashOnHandSpending,
+  isSavingsEntry,
 } from '../utils/cashbookHelpers';
 import { 
   PiggyBank, 
@@ -71,6 +72,7 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
   
   // Daily allowance (30 days per month)
   const dailyAllowance = Math.round(spendablePool / 30);
+  const dailySavingsTarget = Math.round(savingsTarget / 30);
 
   // Check if viewing All Months / All Time filter
   const isAllTime = selectedMonth === 'all';
@@ -92,12 +94,14 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
   const selectedDayCashoutEntries = selectedDayNonSavings.filter((e) => isWithdrawalEntry(e));
   const selectedDayDirectDigitalEntries = selectedDayNonSavings.filter((e) => isDirectDigitalEntry(e));
   const selectedDayCashSpendingEntries = selectedDayNonSavings.filter((e) => isCashOnHandSpending(e));
+  const selectedDaySavingsEntries = selectedDayExpenses.filter((e) => isSavingsEntry(e));
 
   // Totals for selected date
   const selectedDayTotalTransferredFromBank = selectedDayTransfers.reduce((sum, e) => sum + e.totalAmount, 0);
   const selectedDayTotalCashoutReceived = selectedDayCashoutEntries.reduce((sum, e) => sum + e.amount, 0);
   const selectedDaySpendingsFromCashout = selectedDayCashSpendingEntries.reduce((sum, e) => sum + e.totalAmount, 0);
   const selectedDayDirectDigitalSpent = selectedDayDirectDigitalEntries.reduce((sum, e) => sum + e.totalAmount, 0);
+  const selectedDayMtnSavingsDeducted = selectedDaySavingsEntries.reduce((sum, e) => sum + e.totalAmount, 0);
 
   // Remaining unspent cashout on selected date
   const remainingCashOnHand = selectedDayTotalCashoutReceived - selectedDaySpendingsFromCashout;
@@ -378,17 +382,36 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
               <Plus className="w-3.5 h-3.5" />
               Log Entry for {selectedDate === todayStr ? 'Today' : selectedDate}
             </button>
+            <button
+              onClick={() => onOpenExpenseModal('savings')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
+            >
+              <PiggyBank className="w-3.5 h-3.5" />
+              Send MTN Saving
+            </button>
           </div>
         </div>
 
         {/* Status Meter Banner */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
               Daily Budget Limit
             </span>
             <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono mt-0.5 block">
               {formatUGX(dailyAllowance)}
+            </span>
+          </div>
+
+          <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Daily Savings Sent
+            </span>
+            <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
+              {formatUGX(selectedDayMtnSavingsDeducted)}
+            </span>
+            <span className="text-[10px] text-slate-500 block mt-1">
+              Target: {formatUGX(dailySavingsTarget)} / day
             </span>
           </div>
 

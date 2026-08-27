@@ -426,7 +426,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                         </span>
                       ) : exp.isSavings || exp.category === 'Savings & Investments' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-emerald-500 text-white shadow-sm">
-                          <PiggyBank className="w-2.5 h-2.5" /> Savings Deposit
+                          <PiggyBank className="w-2.5 h-2.5" /> Savings Sent
                         </span>
                       ) : isWithdrawalEntry(exp) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-amber-500 text-slate-950 shadow-sm">

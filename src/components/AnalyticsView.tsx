@@ -332,6 +332,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   <td className="py-2 px-3 text-slate-500">Deducted directly from Mobile Money / Bank</td>
                   <td className="py-2 px-3 text-right text-indigo-600 dark:text-indigo-400">-{formatUGX(balances.momoDirectSpendings)}</td>
                 </tr>
+                <tr>
+                  <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400">Less Daily Savings from MTN MoMo</td>
+                  <td className="py-2 px-3 text-slate-500">Sent to external savings destination, deducted from MTN wallet</td>
+                  <td className="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400">-{formatUGX(balances.mtnSavingsDeductions)}</td>
+                </tr>
                 <tr className="bg-amber-50/50 dark:bg-amber-950/20">
                   <td className="py-2 px-3 font-bold text-amber-900 dark:text-amber-300">Cash Received from Cashouts</td>
                   <td className="py-2 px-3 text-slate-500">Inflow available in pocket cash drawer</td>
@@ -406,7 +411,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     <td className="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">+{formatUGX(balances.bankToMtn + balances.airtelToMtnPrincipal)}</td>
                     <td className="py-2 px-2.5 text-right text-rose-500">-{formatUGX(balances.mtnToAirtelTotalDeducted + balances.mtnToBankTotalDeducted)}</td>
                     <td className="py-2 px-2.5 text-right text-rose-500 font-bold">-{formatUGX(balances.mtnDebtRepaymentsPaid)}</td>
-                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.mtnSpent + balances.mtnCashouts)}</td>
+                    <td className="py-2 px-2.5 text-right text-slate-500">-{formatUGX(balances.mtnSpent + balances.mtnCashouts + balances.mtnSavingsDeductions)}</td>
                     <td className={`py-2 px-2.5 text-right font-bold ${balances.availableMtnBalance >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 font-black'}`}>
                       {balances.availableMtnBalance >= 0 ? formatUGX(balances.availableMtnBalance) : `-${formatUGX(Math.abs(balances.availableMtnBalance))}`}
                     </td>

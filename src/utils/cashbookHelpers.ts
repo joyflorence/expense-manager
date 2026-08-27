@@ -222,6 +222,7 @@ export interface CashbookBalances {
 
   // Savings
   totalSavings: number;
+  mtnSavingsDeductions: number;
 
   // Debt Repayments Paid (Liabilities Outflow) & Received (Assets Collected)
   totalDebtRepaymentsPaid: number;
@@ -248,7 +249,7 @@ export interface CashbookBalances {
   availableMtnBalance: number; // Money available in MTN MoMo wallet
   availableAirtelBalance: number; // Money available in Airtel Money wallet
   availableCashOnHand: number; // Money in pocket cash drawer
-  totalCombinedNetWorth: number; // Bank + MoMo + Cash
+  totalCombinedNetWorth: number; // Bank + MoMo + Cash, excluding external savings destination
 }
 
 /**
@@ -454,6 +455,7 @@ export function calculateCashbookBalances(
     (sum, e) => sum + Math.max(0, e.amount - (e.taxAmount || 0)),
     0
   );
+  const mtnSavingsDeductions = savingsEntries.reduce((sum, e) => sum + e.totalAmount, 0);
 
   // 7. Wallet Spendings breakdown
   const mtnSpent = momoDirectEntries.filter((e) => getExpenseSourceAccount(e) === 'mtn_mobile_money').reduce((sum, e) => sum + e.totalAmount, 0);
@@ -465,8 +467,8 @@ export function calculateCashbookBalances(
   // Bank Balance = Inflows + Debt Repayments Collected + MoMo to Bank In - Transfers Out - Direct Bank Spends - ATM Cashouts - Debt Repayments Paid
   const availableBankBalance = totalBankInflows + bankDebtRepaymentsReceived + totalMoMoToBankReceived - totalBankToMobileTransferred - directBankSpendings - bankCashouts - bankDebtRepaymentsPaid;
 
-  // MTN MoMo Balance = Inflows + Debt Repayments Collected + Bank In + Airtel In - MoMo Spends - MoMo Cashouts - Transfers to Airtel - Transfers to Bank - Debt Repayments Paid
-  const availableMtnBalance = totalMtnInflows + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
+  // MTN MoMo Balance = Inflows + Debt Repayments Collected + Bank In + Airtel In - MoMo Spends - MoMo Cashouts - Savings - Transfers to Airtel - Transfers to Bank - Debt Repayments Paid
+  const availableMtnBalance = totalMtnInflows + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnSavingsDeductions - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
 
   // Airtel Money Balance = Inflows + Debt Repayments Collected + Bank In + MTN In - MoMo Spends - MoMo Cashouts - Transfers to MTN - Transfers to Bank - Debt Repayments Paid
   const availableAirtelBalance = totalAirtelInflows + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelToBankTotalDeducted - airtelDebtRepaymentsPaid;
@@ -476,14 +478,14 @@ export function calculateCashbookBalances(
   // Cash on Hand Drawer = Inflows + Debt Repayments Collected + Cashouts Received - Cash Spent - Debt Repayments Paid
   const availableCashOnHand = totalCashInflows + cashDebtRepaymentsReceived + totalCashoutsReceived - totalCashSpendings - cashDebtRepaymentsPaid;
 
-  // Total Outflows (Direct Bank spend + MoMo spend + Cash spend + Transfer fees + Cashout fees + Debt Repayments Paid)
+  // Total Outflows (Direct Bank spend + MoMo spend + Cash spend + savings deductions + transfer fees + cashout fees + debt repayments paid)
   const transferFees = selfInternalTransfers.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
   const cashoutFees = allCashoutEntries.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
-  const totalCombinedOutflows = directBankSpendings + momoDirectSpendings + totalCashSpendings + transferFees + cashoutFees + totalDebtRepaymentsPaid;
+  const totalCombinedOutflows = directBankSpendings + momoDirectSpendings + totalCashSpendings + mtnSavingsDeductions + transferFees + cashoutFees + totalDebtRepaymentsPaid;
 
   const netCashflow = totalCombinedInflow - totalCombinedOutflows;
 
-  // Total Liquid Net Worth
+  // Total liquid cash position after external savings have left MTN MoMo.
   const totalCombinedNetWorth = availableBankBalance + availableMobileMoneyBalance + availableCashOnHand;
 
   return {
@@ -533,6 +535,7 @@ export function calculateCashbookBalances(
     totalCashoutsReceived,
     totalCashSpendings,
     totalSavings,
+    mtnSavingsDeductions,
     totalDebtRepaymentsPaid,
     bankDebtRepaymentsPaid,
     momoDebtRepaymentsPaid,

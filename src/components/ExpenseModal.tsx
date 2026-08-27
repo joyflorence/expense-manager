@@ -427,6 +427,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
       if (initialMode === 'transfer') {
         setTitle('Bank to MTN Mobile Money Transfer (Self)');
+      } else if (initialMode === 'savings') {
+        setTitle('Daily Savings Sent from MTN MoMo');
+        setCategory('Savings & Investments');
+        setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
+        setDeductionSource('mtn_mobile_money');
+        setVendor('External Savings');
       }
     }
   }, [expenseToEdit, selectedMonth, isOpen, initialMode]);
@@ -494,7 +500,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       }
     } else if (isSavings) {
       resolvedCategory = 'Savings & Investments';
-      resolvedDeductionSource = undefined;
+      resolvedPaymentMethod = 'Mobile Money Direct (Airtime/Data/Pay)';
+      resolvedDeductionSource = 'mtn_mobile_money';
+      resolvedVendor = resolvedVendor || 'External Savings';
     } else if (isWithdrawal) {
       resolvedDeductionSource = cashoutSource === 'momo' ? cashoutWallet : 'bank_account';
     }
@@ -563,7 +571,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   ? 'Transfer to Third-Party (Expense)'
                   : 'Transfer Bank to Own Mobile Money'
                 : entryMode === 'savings'
-                ? 'Deposit to Savings Goal'
+                ? 'Send to Savings'
                 : entryMode === 'cashout'
                 ? 'Log Cashout (ATM / Mobile Money)'
                 : deductionSource === 'mobile_money_bank'
@@ -663,6 +671,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   setEntryMode('savings');
                   setCategory('Savings & Investments');
                   setPurpose('personal');
+                  setPaymentMethod('Mobile Money Direct (Airtime/Data/Pay)');
+                  setDeductionSource('mtn_mobile_money');
                 }}
                 className={`py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition ${
                   entryMode === 'savings'
@@ -1281,10 +1291,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 rounded-xl text-emerald-900 dark:text-emerald-200 text-xs space-y-1">
               <div className="flex items-center gap-1.5 font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Monthly Savings Goal Contribution
+                Savings Sent from MTN MoMo
               </div>
               <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                This deposit builds your Monthly Savings Goal! Savings are calculated <strong>minus any tax involved</strong> (Deposit Subtotal minus Tax).
+                This daily saving is sent to your external savings destination and deducted from <strong>MTN MoMo</strong>. Savings are calculated <strong>minus any tax involved</strong> (Deposit Subtotal minus Tax).
               </p>
             </div>
           )}
@@ -1357,7 +1367,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   ? 'Transfer Title / Expense Description *'
                   : 'Transfer Description / Title *'
                 : entryMode === 'savings'
-                ? 'Savings Deposit Label *'
+                ? 'Savings Destination / Label *'
                 : entryMode === 'cashout'
                 ? 'Withdrawal Title / Source *'
                 : 'What did you spend on? *'}
@@ -1455,7 +1465,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     ? 'Total Deducted from Bank as Expense (Principal + Fee):'
                     : 'Total Deducted from Bank (Principal + Fee):'
                   : entryMode === 'savings'
-                  ? 'Net Savings Added (Subtotal - Tax):'
+                  ? 'Net Savings Sent Out (Subtotal - Tax):'
                   : 'Total Amount (Subtotal + Tax/Fee):'}
               </span>
               <span className="text-[10px] text-slate-500 font-mono">
@@ -1465,6 +1475,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     : `Deducted from Bank Account → ${formatUGX(numAmount)} credited to MoMo Wallet`
                   : entryMode === 'cashout'
                   ? `Deducted from ${accountLabel(cashoutSource === 'momo' ? cashoutWallet : 'bank_account')} → Added to Cash on Hand`
+                  : entryMode === 'savings'
+                  ? 'Sent to savings, deducted daily from MTN Mobile Money'
                   : `Deducted from ${accountLabel(deductionSource)}`}
               </span>
             </div>

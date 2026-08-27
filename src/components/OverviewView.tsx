@@ -602,6 +602,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <span>-{formatUGX(balances.mtnDebtRepaymentsPaid)}</span>
                 </div>
               )}
+              {balances.mtnSavingsDeductions > 0 && (
+                <div className="flex justify-between text-emerald-400 font-bold">
+                  <span>Savings Sent:</span>
+                  <span>-{formatUGX(balances.mtnSavingsDeductions)}</span>
+                </div>
+              )}
               {(balances.mtnSpent > 0 || balances.mtnCashouts > 0) && (
                 <div className="flex justify-between text-slate-400">
                   <span>➔ Spends & Cashouts:</span>
