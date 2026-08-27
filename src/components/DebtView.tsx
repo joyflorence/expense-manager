@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DebtItem, DebtStatus, MonthlyBudget } from '../types';
 import { formatUGX } from '../utils/format';
+import { DEFAULT_MONTHLY_SALARY, normalizeMonthlySalary } from '../utils/salary';
 import {
   Landmark,
   HeartHandshake,
@@ -41,7 +42,7 @@ interface DebtViewProps {
 
 export const DebtView: React.FC<DebtViewProps> = ({
   debts,
-  monthlySalary = 500000,
+  monthlySalary = DEFAULT_MONTHLY_SALARY,
   onOpenDebtModal,
   onEditDebt,
   onDeleteDebt,
@@ -81,7 +82,8 @@ export const DebtView: React.FC<DebtViewProps> = ({
   ).length;
 
   // Calculate Debt-to-Salary Ratio (%)
-  const debtToSalaryRatio = monthlySalary > 0 ? (totalBorrowedActive / monthlySalary) * 100 : 0;
+  const effectiveMonthlySalary = normalizeMonthlySalary(monthlySalary);
+  const debtToSalaryRatio = effectiveMonthlySalary > 0 ? (totalBorrowedActive / effectiveMonthlySalary) * 100 : 0;
 
   // Determine Borrowing Position & Recommendation
   let borrowingStatus: 'safe' | 'caution' | 'critical' = 'safe';
@@ -206,7 +208,7 @@ export const DebtView: React.FC<DebtViewProps> = ({
                 </span>
 
                 <span className="text-xs font-medium text-slate-400">
-                  DTI: <strong className="text-slate-200 font-mono">{debtToSalaryRatio.toFixed(1)}%</strong> of Monthly Salary ({formatUGX(monthlySalary)})
+                  DTI: <strong className="text-slate-200 font-mono">{debtToSalaryRatio.toFixed(1)}%</strong> of Monthly Salary ({formatUGX(effectiveMonthlySalary)})
                 </span>
               </div>
 

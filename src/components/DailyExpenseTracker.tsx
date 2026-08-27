@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Expense, MonthlyBudget, Inflow, DebtItem } from '../types';
 import { formatUGX } from '../utils/format';
+import { normalizeMonthlySalary } from '../utils/salary';
 import {
   calculateCashbookBalances,
   isBankToMobileTransfer,
@@ -56,7 +57,7 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
   const [isEditingSalary, setIsEditingSalary] = useState(false);
 
   // Salary & Tax parameters (Gross: 500,000 | Local Tax: 15,000 | NSSF: 0 => Net: 485,000)
-  const grossSalary = budget?.monthlySalary ?? 500000;
+  const grossSalary = normalizeMonthlySalary(budget?.monthlySalary);
   const savingsTarget = budget?.savingsTarget ?? 20000;
   const localTax = budget?.localTax ?? 15000;
   const nssfDeduction = budget?.nssfDeduction ?? 0;

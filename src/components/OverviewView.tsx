@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Expense, MonthlyBudget, PurposeType, DebtItem, Inflow } from '../types';
 import { formatUGX } from '../utils/format';
+import { normalizeMonthlySalary } from '../utils/salary';
 import { DailyExpenseTracker } from './DailyExpenseTracker';
 import {
   calculateCashbookBalances,
@@ -106,7 +107,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const activeLent = debtItems
     .filter((d) => d.type === 'lent' && !d.isGiftOrRemittance && d.status !== 'fully_repaid')
     .reduce((sum, d) => sum + Math.max(0, d.originalAmount - d.repaidAmount), 0);
-  const salaryVal = budget?.monthlySalary || 500000;
+  const salaryVal = normalizeMonthlySalary(budget?.monthlySalary);
   const dtiRatio = salaryVal > 0 ? (activeBorrowed / salaryVal) * 100 : 0;
 
   // Filtered expenses list

@@ -1,4 +1,5 @@
 import { Expense, MonthlyBudget, Inflow, DebtItem, AccountType } from '../types';
+import { normalizeMonthlySalary } from './salary';
 
 /**
  * Check if an expense entry is a Bank to Mobile Money transfer or internal account transfer
@@ -260,7 +261,7 @@ export function calculateCashbookBalances(
   inflows: Inflow[] = [],
   debts: DebtItem[] = []
 ): CashbookBalances {
-  const grossSalary = (budget?.monthlySalary ?? 500000) * recordedMonthsCount;
+  const grossSalary = normalizeMonthlySalary(budget?.monthlySalary) * recordedMonthsCount;
   const localTax = (budget?.localTax !== undefined ? budget.localTax : 15000) * recordedMonthsCount;
   const nssfDeduction = (budget?.nssfDeduction !== undefined ? budget.nssfDeduction : 0) * recordedMonthsCount;
   const netIncome = Math.max(0, grossSalary - nssfDeduction - localTax);

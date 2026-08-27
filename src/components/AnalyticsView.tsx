@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Expense, MonthlyBudget, Inflow, DebtItem } from '../types';
 import { formatUGX } from '../utils/format';
+import { normalizeMonthlySalary } from '../utils/salary';
 import {
   calculateCashbookBalances,
   isBankToMobileTransfer,
@@ -87,7 +88,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const balances = calculateCashbookBalances(expenses, budget, recordedMonthsCount, inflows, debts);
 
   // Gross Salary, Local Tax & Net Income Baseline
-  const grossSalary = (budget?.monthlySalary ?? 500000) * recordedMonthsCount;
+  const grossSalary = normalizeMonthlySalary(budget?.monthlySalary) * recordedMonthsCount;
   const localTax = (budget?.localTax !== undefined ? budget.localTax : 15000) * recordedMonthsCount;
   const nssfDeduction = (budget?.nssfDeduction !== undefined ? budget.nssfDeduction : 0) * recordedMonthsCount;
 

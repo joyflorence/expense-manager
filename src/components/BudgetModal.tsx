@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MonthlyBudget } from '../types';
 import { X, SlidersHorizontal } from 'lucide-react';
+import { DEFAULT_MONTHLY_SALARY, normalizeMonthlySalary } from '../utils/salary';
 
 interface BudgetModalProps {
   isOpen: boolean;
@@ -19,7 +20,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
 }) => {
   const [workBudget, setWorkBudget] = useState(200000);
   const [personalBudget, setPersonalBudget] = useState(200000);
-  const [monthlySalary, setMonthlySalary] = useState(500000);
+  const [monthlySalary, setMonthlySalary] = useState(DEFAULT_MONTHLY_SALARY);
   const [savingsTarget, setSavingsTarget] = useState(20000);
   const [localTax, setLocalTax] = useState(15000);
   const [nssfDeduction, setNssfDeduction] = useState(0);
@@ -28,7 +29,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
     if (currentBudget) {
       setWorkBudget(currentBudget.workBudget);
       setPersonalBudget(currentBudget.personalBudget);
-      setMonthlySalary(currentBudget.monthlySalary ?? 500000);
+      setMonthlySalary(normalizeMonthlySalary(currentBudget.monthlySalary));
       setSavingsTarget(currentBudget.savingsTarget ?? 20000);
       setLocalTax(currentBudget.localTax ?? 15000);
       setNssfDeduction(currentBudget.nssfDeduction ?? 0);
