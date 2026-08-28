@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LockKeyhole, Mail, UserRound, Wallet } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, Mail, UserRound, Wallet } from 'lucide-react';
 import { supabase, authConfigError } from '../auth';
 
 export function AuthPage() {
@@ -7,6 +7,7 @@ export function AuthPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,7 +63,29 @@ export function AuthPage() {
         </div>
         {mode === 'sign-up' && <label className="block text-sm font-medium">Name<div className="relative mt-2"><UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></div></label>}
         <label className="block text-sm font-medium">Email<div className="relative mt-2"><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></div></label>
-        <label className="block text-sm font-medium">Password<div className="relative mt-2"><LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required minLength={8} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></div></label>
+        <label className="block text-sm font-medium">
+          Password
+          <div className="relative mt-2">
+            <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+            <input
+              required
+              minLength={8}
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-11 text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </label>
         {(authConfigError || message) && <p className="text-xs text-rose-400">{authConfigError || message}</p>}
         <button disabled={isSubmitting} className="w-full rounded-xl bg-emerald-500 py-2.5 font-bold text-slate-950 disabled:opacity-60">{isSubmitting ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</button>
       </form>
