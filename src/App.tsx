@@ -14,6 +14,7 @@ import { DebtModal } from './components/DebtModal';
 import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
 import { MobileNavigation } from './components/MobileNavigation';
+import { SidebarNavigation } from './components/SidebarNavigation';
 import { CashbookState, loadCashbook, saveRecord, deleteRecord, RecordKind } from './api';
 import { supabase, useSupabaseSession } from './auth';
 import { AuthPage } from './components/AuthPage';
@@ -613,7 +614,6 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
-        currentTab={currentTab}
         onTabChange={setCurrentTab}
         dateFilter={dateFilter}
         onDateFilterChange={handleDateFilterChange}
@@ -644,36 +644,39 @@ export default function App() {
       )}
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-28 md:py-6 md:pb-20">
-        {currentTab === 'overview' && (
-          <OverviewView
-            expenses={currentFilteredExpenses}
-            inflows={currentFilteredInflows}
-            debts={debts}
-            budget={currentBudget}
-            selectedMonth={selectedMonth}
-            onEditExpense={(expense) => {
-              setExpenseToEdit(expense);
-              setIsExpenseModalOpen(true);
-            }}
-            onDeleteExpense={handleDeleteExpense}
-            onOpenExpenseModal={() => {
-              setExpenseToEdit(null);
-              setIsExpenseModalOpen(true);
-            }}
-            onOpenInflowModal={() => {
-              setInflowToEdit(null);
-              setIsInflowModalOpen(true);
-            }}
-            onEditInflow={(inflow) => {
-              setInflowToEdit(inflow);
-              setIsInflowModalOpen(true);
-            }}
-            onDeleteInflow={handleDeleteInflow}
-            onNavigateToTab={setCurrentTab}
-            onUpdateBudgetSalary={handleUpdateBudgetSalary}
-          />
-        )}
+      <div className="mx-auto flex max-w-7xl gap-5 px-4 sm:px-6 lg:px-8">
+        <SidebarNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
+
+        <main className="min-w-0 flex-1 py-5 pb-28 md:py-6 md:pb-20">
+          {currentTab === 'overview' && (
+            <OverviewView
+              expenses={currentFilteredExpenses}
+              inflows={currentFilteredInflows}
+              debts={debts}
+              budget={currentBudget}
+              selectedMonth={selectedMonth}
+              onEditExpense={(expense) => {
+                setExpenseToEdit(expense);
+                setIsExpenseModalOpen(true);
+              }}
+              onDeleteExpense={handleDeleteExpense}
+              onOpenExpenseModal={() => {
+                setExpenseToEdit(null);
+                setIsExpenseModalOpen(true);
+              }}
+              onOpenInflowModal={() => {
+                setInflowToEdit(null);
+                setIsInflowModalOpen(true);
+              }}
+              onEditInflow={(inflow) => {
+                setInflowToEdit(inflow);
+                setIsInflowModalOpen(true);
+              }}
+              onDeleteInflow={handleDeleteInflow}
+              onNavigateToTab={setCurrentTab}
+              onUpdateBudgetSalary={handleUpdateBudgetSalary}
+            />
+          )}
 
         {currentTab === 'expenses' && (
           <ExpenseView
@@ -726,7 +729,8 @@ export default function App() {
             selectedMonth={selectedMonth}
           />
         )}
-      </main>
+        </main>
+      </div>
 
       {/* Footer Status Bar with Quick Action */}
       <footer className="fixed bottom-0 left-0 right-0 z-20 hidden bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 py-2 text-[11px] text-slate-500 font-mono md:flex flex-wrap items-center justify-between gap-2">

@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Wallet,
-  Receipt, 
-  BarChart3, 
-  LayoutDashboard, 
   Plus, 
   Calendar, 
   Download, 
@@ -13,8 +10,6 @@ import {
   RefreshCw,
   Sun,
   Moon,
-  Landmark,
-  Banknote,
   ArrowDownLeft,
   CalendarDays,
   CalendarRange,
@@ -26,7 +21,6 @@ import { DateFilterState, DateFilterMode } from '../types';
 export type ViewTab = 'overview' | 'expenses' | 'debts' | 'analytics';
 
 interface NavbarProps {
-  currentTab: ViewTab;
   onTabChange: (tab: ViewTab) => void;
   dateFilter: DateFilterState;
   onDateFilterChange: (filter: DateFilterState) => void;
@@ -44,7 +38,6 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  currentTab,
   onTabChange,
   dateFilter,
   onDateFilterChange,
@@ -332,58 +325,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm font-medium">
-          <button
-            onClick={() => onTabChange('overview')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
-              currentTab === 'overview'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4 text-emerald-500" />
-            Cashbook Overview
-          </button>
-
-          <button
-            onClick={() => onTabChange('expenses')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
-              currentTab === 'expenses'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Receipt className="w-4 h-4 text-emerald-500" />
-            Cashbook Ledger
-          </button>
-
-          <button
-            onClick={() => onTabChange('debts')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
-              currentTab === 'debts'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Landmark className="w-4 h-4 text-amber-500" />
-            Debts & Friend Transfers
-          </button>
-
-          <button
-            onClick={() => onTabChange('analytics')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition whitespace-nowrap text-xs font-semibold cursor-pointer ${
-              currentTab === 'analytics'
-                ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-xs border border-slate-800 dark:border-slate-700'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 text-indigo-500" />
-            Reports & Statements
-          </button>
-        </div>
       </div>
     </header>
   );
 };
-
