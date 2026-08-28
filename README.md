@@ -1,4 +1,4 @@
-# OmniTrack Cashbook
+# Expense Manager
 
 Personal cashbook for recording Ugandan Shilling inflows, expenses, transfers, budgets, savings, debts, and repayments. The React app is powered by **Supabase** (Supabase Auth and PostgreSQL database with Row-Level Security).
 

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- OmniTrack Cashbook: Supabase Schema & Row-Level Security Setup
+-- Expense Manager: Supabase Schema & Row-Level Security Setup
 -- Run this script once in your Supabase SQL Editor (Dashboard > SQL Editor)
 -- ==============================================================================
 

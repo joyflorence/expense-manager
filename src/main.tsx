@@ -18,7 +18,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
     if (this.state.error) {
       return (
         <main style={{ fontFamily: 'system-ui', padding: '2rem', color: '#0f172a' }}>
-          <h1>OmniTrack Cash could not start</h1>
+          <h1>Expense Manager could not start</h1>
           <p>{this.state.error.message}</p>
           <p>Open the browser console for the component stack, then reload the page after deploying the latest build.</p>
         </main>

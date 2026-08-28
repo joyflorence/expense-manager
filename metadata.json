@@ -1,5 +1,5 @@
 {
-  "name": "OmniTrack - Cashbook & Financial Tracker",
+  "name": "Expense Manager",
   "description": "Comprehensive cashbook tracker for monitoring salary inflows, bank-to-mobile money transfers, ATM and mobile cashouts, cash drawer balances, taxes, and debts.",
   "requestFramePermissions": [],
   "majorCapabilities": ["VERCEL_DEPLOYMENT", "SUPABASE_POSTGRES_PERSISTENCE"]

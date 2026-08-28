@@ -28,7 +28,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   const handleExportJSON = () => {
     const backupObj = {
-      app: 'OmniTrack Cashbook',
+      app: 'Expense Manager',
       exportedAt: new Date().toISOString(),
       expenses,
       inflows,
@@ -39,7 +39,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `OmniTrack_Cashbook_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `Expense_Manager_Backup_${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };

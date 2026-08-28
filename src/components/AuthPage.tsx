@@ -56,7 +56,7 @@ export function AuthPage() {
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-7 shadow-2xl space-y-5">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-emerald-500/15 p-3"><Wallet className="h-6 w-6 text-emerald-400" /></div>
-          <div><h1 className="font-bold">OmniTrack Cash</h1><p className="text-xs text-slate-500 dark:text-slate-400">Your private cashbook</p></div>
+          <div><h1 className="font-bold">Expense Manager</h1><p className="text-xs text-slate-500 dark:text-slate-400">Your private cashbook</p></div>
         </div>
         <div className="grid grid-cols-2 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-sm">
           {(['sign-in', 'sign-up'] as const).map((item) => <button key={item} type="button" onClick={() => { setMode(item); setMessage(''); }} className={`rounded-lg py-2 ${mode === item ? 'bg-emerald-500 font-bold text-slate-950' : 'text-slate-600 dark:text-slate-300'}`}>{item === 'sign-in' ? 'Sign in' : 'Create account'}</button>)}

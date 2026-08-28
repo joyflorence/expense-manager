@@ -85,10 +85,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-none">
-                OMNITRACK<span className="text-emerald-500">.CASH</span>
+                EXPENSE<span className="text-emerald-500"> MANAGER</span>
               </h1>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mt-0.5 hidden sm:block">
-                Cashbook & Financial Ledger
+                Cashbook & Expense Ledger
               </p>
             </div>
           </div>

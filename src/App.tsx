@@ -104,11 +104,11 @@ export default function App() {
   };
 
   const downloadBackup = (reason: 'clear' | 'reset') => {
-    const backup = { app: 'OmniTrack Cashbook', exportedAt: new Date().toISOString(), expenses, inflows, budgets, debts };
+    const backup = { app: 'Expense Manager', exportedAt: new Date().toISOString(), expenses, inflows, budgets, debts };
     const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `OmniTrack_before_${reason}_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `Expense_Manager_before_${reason}_${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -777,7 +777,7 @@ export default function App() {
           <button onClick={() => void handleSignOut()} className="inline-flex items-center gap-1 text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 font-semibold" title="Sign out">
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
-          <span className="text-slate-600 dark:text-slate-400 font-semibold">OMNITRACK.CASH V2.4.0</span>
+          <span className="text-slate-600 dark:text-slate-400 font-semibold">EXPENSE MANAGER V2.4.0</span>
         </div>
       </footer>
 
