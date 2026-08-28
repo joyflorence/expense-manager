@@ -76,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 sticky top-0 z-30 shadow-xs transition-colors duration-200">
       {/* Top Main Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-3">
           
           {/* Brand */}
           <div className="flex items-center gap-3 cursor-pointer select-none shrink-0" onClick={() => onTabChange('overview')}>
@@ -94,17 +94,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Quick Action Buttons & Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Quick Action: Log Inflow */}
             <button
               id="navbar-add-inflow-btn"
               onClick={onOpenInflowModal}
               title="Record Money Coming In"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition active:scale-95 shadow-xs cursor-pointer"
+              className="inline-flex h-9 items-center gap-1 rounded-lg bg-emerald-600 px-2 text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-500 active:scale-95 sm:h-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs cursor-pointer"
             >
-              <ArrowDownLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+              <ArrowDownLeft className="h-3.5 w-3.5 shrink-0 stroke-[2.5]" />
               <span className="hidden sm:inline">+ Log Inflow</span>
-              <span className="sm:hidden">+ Inflow</span>
+              <span className="sm:hidden">In</span>
             </button>
 
             {/* Quick Action: Add Expense */}
@@ -112,11 +112,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="navbar-add-expense-btn"
               onClick={onOpenExpenseModal}
               title="Record Expense, Transfer or Cashout"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition active:scale-95 border border-slate-700 shadow-xs cursor-pointer"
+              className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[11px] font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700 sm:h-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 sm:text-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <Plus className="h-3.5 w-3.5 shrink-0 stroke-[2.5]" />
               <span className="hidden sm:inline">Log Expense</span>
-              <span className="sm:hidden">Expense</span>
+              <span className="sm:hidden">Exp</span>
             </button>
 
             {/* Refresh */}
