@@ -377,7 +377,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[11px]">
                     <th className="py-2 px-2.5">Account / Channel</th>
-                    <th className="py-2 px-2.5 text-right">Inflows / Borrowed In</th>
+                    <th className="py-2 px-2.5 text-right">Inflows / Unpaid Debt</th>
                     <th className="py-2 px-2.5 text-right">Transfers In</th>
                     <th className="py-2 px-2.5 text-right">Transfers Out</th>
                     <th className="py-2 px-2.5 text-right text-rose-500">Debt Repaid</th>

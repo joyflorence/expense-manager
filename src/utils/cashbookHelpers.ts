@@ -189,8 +189,8 @@ export interface CashbookBalances {
   totalMtnInflows: number; // MTN specific Inflows
   totalAirtelInflows: number; // Airtel specific Inflows
   totalCashInflows: number; // Cash Drawer Inflows
-  totalCombinedInflow: number; // Bank + MoMo + Cash Inflow + Debt Repayments Received
-  totalBorrowedFundsReceived: number; // Borrowed principal received into Bank, MoMo, or Cash
+  totalCombinedInflow: number; // Bank + MoMo + Cash Inflow + Debt Repayments Received + unpaid borrowed balance
+  totalBorrowedFundsReceived: number; // Unpaid borrowed balance still counted in Bank, MoMo, or Cash
   bankBorrowedFundsReceived: number;
   mtnBorrowedFundsReceived: number;
   airtelBorrowedFundsReceived: number;
@@ -332,14 +332,6 @@ export function calculateCashbookBalances(
     const originalDebtAmount = Math.max(0, Number(debt.originalAmount) || 0);
     let loggedRepaymentTotal = 0;
 
-    if (debt.type === 'borrowed') {
-      const receivedAccount = getBorrowedDebtReceivedAccount(debt);
-      if (receivedAccount === 'bank_account') bankBorrowedFundsReceived += originalDebtAmount;
-      else if (receivedAccount === 'airtel_mobile_money') airtelBorrowedFundsReceived += originalDebtAmount;
-      else if (receivedAccount === 'cash_on_hand') cashBorrowedFundsReceived += originalDebtAmount;
-      else mtnBorrowedFundsReceived += originalDebtAmount;
-    }
-
     for (const rep of debt.repayments || []) {
       const amount = Number(rep.amount) || 0;
       if (amount <= 0) continue;
@@ -377,6 +369,17 @@ export function calculateCashbookBalances(
       )
     );
     const impliedRepaymentAmount = Math.max(0, effectiveRepaidAmount - loggedRepaymentTotal);
+    const unpaidBorrowedAmount = debt.type === 'borrowed'
+      ? Math.max(0, originalDebtAmount - effectiveRepaidAmount)
+      : 0;
+
+    if (unpaidBorrowedAmount > 0) {
+      const receivedAccount = getBorrowedDebtReceivedAccount(debt);
+      if (receivedAccount === 'bank_account') bankBorrowedFundsReceived += unpaidBorrowedAmount;
+      else if (receivedAccount === 'airtel_mobile_money') airtelBorrowedFundsReceived += unpaidBorrowedAmount;
+      else if (receivedAccount === 'cash_on_hand') cashBorrowedFundsReceived += unpaidBorrowedAmount;
+      else mtnBorrowedFundsReceived += unpaidBorrowedAmount;
+    }
 
     if (impliedRepaymentAmount > 0) {
       if (debt.type === 'borrowed') {

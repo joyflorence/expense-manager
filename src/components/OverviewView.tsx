@@ -325,7 +325,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>MTN + Airtel, including borrowed money received</span>
+            <span>MTN + Airtel, including unpaid borrowed balance</span>
             <button 
               onClick={() => onOpenExpenseModal('transfer')}
               className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer flex items-center gap-0.5"
@@ -1101,7 +1101,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </div>
                 {balances.mtnBorrowedFundsReceived + balances.airtelBorrowedFundsReceived > 0 && (
                   <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300">
-                    <span className="font-semibold">Borrowed into wallets</span>
+                    <span className="font-semibold">Unpaid borrowed wallet balance</span>
                     <span className="font-mono font-bold">+{formatUGX(balances.mtnBorrowedFundsReceived + balances.airtelBorrowedFundsReceived)}</span>
                   </div>
                 )}

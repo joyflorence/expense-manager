@@ -332,7 +332,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                 <option value="cash_on_hand">Cash on Hand</option>
               </select>
               <p className="mt-1 text-[10px] text-amber-800 dark:text-amber-300">
-                Borrowed principal will be added to this balance, then repayments reduce the account used to repay.
+                Only the unpaid borrowed balance is added here; repayments remove it as you clear the debt.
               </p>
             </div>
           )}
