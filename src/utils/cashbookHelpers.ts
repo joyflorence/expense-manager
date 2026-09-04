@@ -165,6 +165,16 @@ export function getExpenseDestinationAccount(e: Expense): AccountType {
   return 'mtn_mobile_money';
 }
 
+function getBorrowedDebtReceivedAccount(debt: DebtItem): AccountType {
+  if (debt.receivedAccount) return debt.receivedAccount;
+
+  const text = `${debt.title || ''} ${debt.counterpartyName || ''} ${debt.notes || ''}`.toLowerCase();
+  if (text.includes('airtel') || text.includes('wewole') || text.includes('kopa')) return 'airtel_mobile_money';
+  if (text.includes('mtn') || text.includes('mokash') || text.includes('momo') || debt.relationship === 'mobile_money') return 'mtn_mobile_money';
+  if (debt.relationship === 'bank_financial' || text.includes('bank')) return 'bank_account';
+  return 'cash_on_hand';
+}
+
 export interface CashbookBalances {
   recordedMonthsCount: number;
   grossSalary: number;
@@ -179,6 +189,11 @@ export interface CashbookBalances {
   totalAirtelInflows: number; // Airtel specific Inflows
   totalCashInflows: number; // Cash Drawer Inflows
   totalCombinedInflow: number; // Bank + MoMo + Cash Inflow + Debt Repayments Received
+  totalBorrowedFundsReceived: number; // Borrowed principal received into Bank, MoMo, or Cash
+  bankBorrowedFundsReceived: number;
+  mtnBorrowedFundsReceived: number;
+  airtelBorrowedFundsReceived: number;
+  cashBorrowedFundsReceived: number;
   totalLoggedGrossInflow: number; // Gross Inflows before taxes
   totalLoggedNetInflow: number; // Net Inflows received
   totalInflowsLogged: number; // Alias for totalLoggedNetInflow
@@ -303,8 +318,21 @@ export function calculateCashbookBalances(
   let mtnDebtRepaymentsReceived = 0;
   let airtelDebtRepaymentsReceived = 0;
   let cashDebtRepaymentsReceived = 0;
+  let bankBorrowedFundsReceived = 0;
+  let mtnBorrowedFundsReceived = 0;
+  let airtelBorrowedFundsReceived = 0;
+  let cashBorrowedFundsReceived = 0;
 
   for (const debt of debts) {
+    if (debt.type === 'borrowed') {
+      const receivedAccount = getBorrowedDebtReceivedAccount(debt);
+      const principal = Math.max(0, Number(debt.originalAmount) || 0);
+      if (receivedAccount === 'bank_account') bankBorrowedFundsReceived += principal;
+      else if (receivedAccount === 'airtel_mobile_money') airtelBorrowedFundsReceived += principal;
+      else if (receivedAccount === 'cash_on_hand') cashBorrowedFundsReceived += principal;
+      else mtnBorrowedFundsReceived += principal;
+    }
+
     for (const rep of debt.repayments || []) {
       const amount = Number(rep.amount) || 0;
       if (amount <= 0) continue;
@@ -338,8 +366,9 @@ export function calculateCashbookBalances(
 
   const momoDebtRepaymentsReceived = mtnDebtRepaymentsReceived + airtelDebtRepaymentsReceived;
   const totalDebtRepaymentsReceived = bankDebtRepaymentsReceived + momoDebtRepaymentsReceived + cashDebtRepaymentsReceived;
+  const totalBorrowedFundsReceived = bankBorrowedFundsReceived + mtnBorrowedFundsReceived + airtelBorrowedFundsReceived + cashBorrowedFundsReceived;
 
-  const totalCombinedInflow = totalBankInflows + totalMoMoInflows + totalCashInflows + totalDebtRepaymentsReceived;
+  const totalCombinedInflow = totalBankInflows + totalMoMoInflows + totalCashInflows + totalDebtRepaymentsReceived + totalBorrowedFundsReceived;
 
   // 2. Internal Transfers (Bank to Mobile Money, MoMo to MoMo, MoMo to Bank)
   const selfInternalTransfers = expenses.filter((e) => isInternalTransfer(e));
@@ -465,18 +494,18 @@ export function calculateCashbookBalances(
 
   // 8. Final Available Balances
   // Bank Balance = Inflows + Debt Repayments Collected + MoMo to Bank In - Transfers Out - Direct Bank Spends - ATM Cashouts - Debt Repayments Paid
-  const availableBankBalance = totalBankInflows + bankDebtRepaymentsReceived + totalMoMoToBankReceived - totalBankToMobileTransferred - directBankSpendings - bankCashouts - bankDebtRepaymentsPaid;
+  const availableBankBalance = totalBankInflows + bankBorrowedFundsReceived + bankDebtRepaymentsReceived + totalMoMoToBankReceived - totalBankToMobileTransferred - directBankSpendings - bankCashouts - bankDebtRepaymentsPaid;
 
   // MTN MoMo Balance = Inflows + Debt Repayments Collected + Bank In + Airtel In - MoMo Spends - MoMo Cashouts - Savings - Transfers to Airtel - Transfers to Bank - Debt Repayments Paid
-  const availableMtnBalance = totalMtnInflows + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnSavingsDeductions - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
+  const availableMtnBalance = totalMtnInflows + mtnBorrowedFundsReceived + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnSavingsDeductions - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
 
   // Airtel Money Balance = Inflows + Debt Repayments Collected + Bank In + MTN In - MoMo Spends - MoMo Cashouts - Transfers to MTN - Transfers to Bank - Debt Repayments Paid
-  const availableAirtelBalance = totalAirtelInflows + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelToBankTotalDeducted - airtelDebtRepaymentsPaid;
+  const availableAirtelBalance = totalAirtelInflows + airtelBorrowedFundsReceived + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelToBankTotalDeducted - airtelDebtRepaymentsPaid;
 
   const availableMobileMoneyBalance = availableMtnBalance + availableAirtelBalance;
 
   // Cash on Hand Drawer = Inflows + Debt Repayments Collected + Cashouts Received - Cash Spent - Debt Repayments Paid
-  const availableCashOnHand = totalCashInflows + cashDebtRepaymentsReceived + totalCashoutsReceived - totalCashSpendings - cashDebtRepaymentsPaid;
+  const availableCashOnHand = totalCashInflows + cashBorrowedFundsReceived + cashDebtRepaymentsReceived + totalCashoutsReceived - totalCashSpendings - cashDebtRepaymentsPaid;
 
   // Total Outflows (Direct Bank spend + MoMo spend + Cash spend + savings deductions + transfer fees + cashout fees + debt repayments paid)
   const transferFees = selfInternalTransfers.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
@@ -502,6 +531,11 @@ export function calculateCashbookBalances(
     totalAirtelInflows,
     totalCashInflows,
     totalCombinedInflow,
+    totalBorrowedFundsReceived,
+    bankBorrowedFundsReceived,
+    mtnBorrowedFundsReceived,
+    airtelBorrowedFundsReceived,
+    cashBorrowedFundsReceived,
     totalLoggedGrossInflow,
     totalLoggedNetInflow,
     totalInflowsLogged: totalLoggedNetInflow,

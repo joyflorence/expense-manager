@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DebtItem, DebtStatus, MonthlyBudget } from '../types';
+import { AccountType, DebtItem, DebtStatus, MonthlyBudget } from '../types';
 import { formatUGX } from '../utils/format';
 import { DEFAULT_MONTHLY_SALARY, normalizeMonthlySalary } from '../utils/salary';
 import {
@@ -56,6 +56,13 @@ export const DebtView: React.FC<DebtViewProps> = ({
   const [expandedRepaymentsId, setExpandedRepaymentsId] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  const accountLabel = (account: AccountType = 'mtn_mobile_money') => ({
+    bank_account: 'Bank Account',
+    mtn_mobile_money: 'MTN MoMo Wallet',
+    airtel_mobile_money: 'Airtel Money Wallet',
+    cash_on_hand: 'Cash on Hand',
+    mobile_money: 'Mobile Money Wallet',
+  }[account] || 'MTN MoMo Wallet');
 
   // Calculate Metrics
   const borrowedDebts = debts.filter((d) => d.type === 'borrowed');
@@ -472,7 +479,7 @@ export const DebtView: React.FC<DebtViewProps> = ({
                 }`}
               >
                 {/* Top Row: Badges, Counterparty, Title */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start justify-between gap-2">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap text-xs">
                       {/* Debt Type Badge */}
@@ -531,6 +538,12 @@ export const DebtView: React.FC<DebtViewProps> = ({
                       {debt.dueDate ? ` • Due: ${debt.dueDate}` : ''}
                     </p>
                   </div>
+
+                  {debt.type === 'borrowed' && (
+                    <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 sm:basis-full sm:order-last">
+                      Received into: {accountLabel(debt.receivedAccount)}
+                    </p>
+                  )}
 
                   {/* Financial Balance Summary */}
                   <div className="sm:text-right shrink-0">

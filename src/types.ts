@@ -145,6 +145,7 @@ export interface DebtItem {
   counterpartyName: string;
   relationship: DebtPartyRelationship;
   originalAmount: number;
+  receivedAccount?: AccountType; // For borrowed money: account/wallet where the loan proceeds were received
   repaidAmount: number;
   interestRate?: number; // annual % or fee rate
   dueDate?: string; // YYYY-MM-DD
@@ -155,4 +156,3 @@ export interface DebtItem {
   notes?: string;
   repayments: DebtRepayment[];
 }
-

@@ -315,7 +315,7 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
       </div>
 
       {/* 4-Channel Live Liquidity Strip (Bank, MTN MoMo, Airtel Money, Cash on Hand) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
           <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
             🏦 Bank Balance
@@ -340,6 +340,15 @@ export const DailyExpenseTracker: React.FC<DailyExpenseTrackerProps> = ({
           </span>
           <span className="text-sm font-black font-mono text-rose-700 dark:text-rose-300 block mt-0.5">
             {formatUGX(balances.availableAirtelBalance)}
+          </span>
+        </div>
+
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+            Overall Wallets
+          </span>
+          <span className="text-sm font-black font-mono text-emerald-700 dark:text-emerald-300 block mt-0.5">
+            {formatUGX(balances.availableMobileMoneyBalance)}
           </span>
         </div>
 

@@ -299,7 +299,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         {/* Card 2: Mobile Money Wallet Balance */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Mobile Money</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Overall Wallet Balance</span>
             <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200 dark:border-slate-700">
               <Smartphone className="w-4 h-4" />
             </div>
@@ -320,7 +320,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Inflows + Transfers</span>
+            <span>MTN + Airtel, including borrowed money received</span>
             <button 
               onClick={() => onOpenExpenseModal('transfer')}
               className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer flex items-center gap-0.5"
@@ -1083,8 +1083,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-1.5">
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block font-sans">2. Mobile Money Wallet</span>
-                    <span className="text-[10px] text-slate-500 font-sans">Total active balance</span>
+                    <span className="font-bold text-slate-900 dark:text-white block font-sans">2. Overall Wallet Balance</span>
+                    <span className="text-[10px] text-slate-500 font-sans">MTN + Airtel, including borrowed funds received</span>
                   </div>
                   <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
                     {formatUGX(balances.availableMobileMoneyBalance)}
@@ -1094,6 +1094,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <span className="text-amber-700 dark:text-amber-300 font-bold">MTN: {formatUGX(balances.availableMtnBalance)}</span>
                   <span className="text-rose-700 dark:text-rose-300 font-bold">Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
                 </div>
+                {balances.mtnBorrowedFundsReceived + balances.airtelBorrowedFundsReceived > 0 && (
+                  <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300">
+                    <span className="font-semibold">Borrowed into wallets</span>
+                    <span className="font-mono font-bold">+{formatUGX(balances.mtnBorrowedFundsReceived + balances.airtelBorrowedFundsReceived)}</span>
+                  </div>
+                )}
               </div>
 
               {/* 6. Cash on Hand Drawer */}

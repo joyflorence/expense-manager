@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DebtItem, DebtType, DebtPartyRelationship, PurposeType } from '../types';
+import { AccountType, DebtItem, DebtType, DebtPartyRelationship, PurposeType } from '../types';
 import { X, Landmark, User, HeartHandshake, ShieldAlert, Calendar, DollarSign, FileText, Smartphone, Zap } from 'lucide-react';
 
 interface DebtModalProps {
@@ -19,6 +19,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
   const [title, setTitle] = useState('');
   const [counterpartyName, setCounterpartyName] = useState('');
   const [relationship, setRelationship] = useState<DebtPartyRelationship>('friend');
+  const [receivedAccount, setReceivedAccount] = useState<AccountType>('mtn_mobile_money');
   const [originalAmount, setOriginalAmount] = useState<number>(0);
   const [interestRate, setInterestRate] = useState<number>(0);
   const [issueDate, setIssueDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -33,6 +34,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
       setTitle(debtToEdit.title);
       setCounterpartyName(debtToEdit.counterpartyName);
       setRelationship(debtToEdit.relationship);
+      setReceivedAccount(debtToEdit.receivedAccount || 'mtn_mobile_money');
       setOriginalAmount(debtToEdit.originalAmount);
       setInterestRate(debtToEdit.interestRate || 0);
       setIssueDate(debtToEdit.issueDate || new Date().toISOString().slice(0, 10));
@@ -45,6 +47,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
       setTitle('');
       setCounterpartyName('');
       setRelationship('friend');
+      setReceivedAccount('mtn_mobile_money');
       setOriginalAmount(0);
       setInterestRate(0);
       setIssueDate(new Date().toISOString().slice(0, 10));
@@ -66,6 +69,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
       type,
       counterpartyName: counterpartyName.trim(),
       relationship,
+      receivedAccount: type === 'borrowed' ? receivedAccount : undefined,
       originalAmount: Number(originalAmount),
       interestRate: Number(interestRate) || 0,
       issueDate,
@@ -173,6 +177,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('MTN MoKash Loan');
                     setCounterpartyName('MTN Uganda / MoKash (NCBA)');
                     setRelationship('mobile_money');
+                    setReceivedAccount('mtn_mobile_money');
                     setInterestRate(9);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-800 font-bold text-[11px] transition flex items-center gap-1 border border-amber-400 dark:border-amber-700 active:scale-95"
@@ -188,6 +193,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('MTN MoMo Advance Overdraft');
                     setCounterpartyName('MTN MoMo Uganda');
                     setRelationship('mobile_money');
+                    setReceivedAccount('mtn_mobile_money');
                     setInterestRate(5);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-800 font-bold text-[11px] transition flex items-center gap-1 border border-amber-400 dark:border-amber-700 active:scale-95"
@@ -202,6 +208,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('MTN XtraTime Airtime Loan');
                     setCounterpartyName('MTN Uganda');
                     setRelationship('mobile_money');
+                    setReceivedAccount('mtn_mobile_money');
                     setInterestRate(15);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-800 font-bold text-[11px] transition flex items-center gap-1 border border-amber-400 dark:border-amber-700 active:scale-95"
@@ -216,6 +223,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('Airtel Wewole Loan');
                     setCounterpartyName('Airtel Uganda / Wewole (Jumo)');
                     setRelationship('mobile_money');
+                    setReceivedAccount('airtel_mobile_money');
                     setInterestRate(10);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-rose-200/80 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100 hover:bg-rose-300 dark:hover:bg-rose-900 font-bold text-[11px] transition flex items-center gap-1 border border-rose-400 dark:border-rose-800 active:scale-95"
@@ -231,6 +239,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('Airtel Money Overdraft');
                     setCounterpartyName('Airtel Money Uganda');
                     setRelationship('mobile_money');
+                    setReceivedAccount('airtel_mobile_money');
                     setInterestRate(5);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-rose-200/80 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100 hover:bg-rose-300 dark:hover:bg-rose-900 font-bold text-[11px] transition flex items-center gap-1 border border-rose-400 dark:border-rose-800 active:scale-95"
@@ -245,6 +254,7 @@ export const DebtModal: React.FC<DebtModalProps> = ({
                     setTitle('Airtel Kopa Airtime / Data');
                     setCounterpartyName('Airtel Uganda');
                     setRelationship('mobile_money');
+                    setReceivedAccount('airtel_mobile_money');
                     setInterestRate(15);
                   }}
                   className="px-2.5 py-1.5 rounded-lg bg-rose-200/80 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100 hover:bg-rose-300 dark:hover:bg-rose-900 font-bold text-[11px] transition flex items-center gap-1 border border-rose-400 dark:border-rose-800 active:scale-95"
@@ -305,6 +315,27 @@ export const DebtModal: React.FC<DebtModalProps> = ({
               </select>
             </div>
           </div>
+
+          {type === 'borrowed' && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Money Received Into *
+              </label>
+              <select
+                value={receivedAccount}
+                onChange={(e) => setReceivedAccount(e.target.value as AccountType)}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="mtn_mobile_money">MTN MoMo Wallet</option>
+                <option value="airtel_mobile_money">Airtel Money Wallet</option>
+                <option value="bank_account">Bank Account</option>
+                <option value="cash_on_hand">Cash on Hand</option>
+              </select>
+              <p className="mt-1 text-[10px] text-amber-800 dark:text-amber-300">
+                Borrowed principal will be added to this balance, then repayments reduce the account used to repay.
+              </p>
+            </div>
+          )}
 
           {/* Amount & Interest */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
