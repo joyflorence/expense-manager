@@ -317,6 +317,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="flex items-center gap-1 font-semibold">🔴 Airtel Money:</span>
                 <span className="font-mono font-bold">{formatUGX(balances.availableAirtelBalance)}</span>
               </div>
+              {(balances.mtnWalletShortfall > 0 || balances.airtelWalletShortfall > 0) && (
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 px-2 py-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
+                  Wallet records need an opening/top-up inflow to fully match all-time deductions.
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">

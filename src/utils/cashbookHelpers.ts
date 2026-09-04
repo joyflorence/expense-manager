@@ -183,6 +183,7 @@ export interface CashbookBalances {
   netIncome: number; // Baseline Net Income
 
   // Inflows
+  inflowEntries: Inflow[];
   totalBankInflows: number; // Logged Bank Inflows OR baseline net income
   totalMoMoInflows: number; // Combined Mobile Money Inflows
   totalMtnInflows: number; // MTN specific Inflows
@@ -263,6 +264,10 @@ export interface CashbookBalances {
   availableMobileMoneyBalance: number; // Combined money available in Mobile Money wallets
   availableMtnBalance: number; // Money available in MTN MoMo wallet
   availableAirtelBalance: number; // Money available in Airtel Money wallet
+  rawAvailableMtnBalance: number; // Audit balance before wallet floor adjustment
+  rawAvailableAirtelBalance: number; // Audit balance before wallet floor adjustment
+  mtnWalletShortfall: number; // Missing MTN inflow/opening balance needed to explain recorded outflows
+  airtelWalletShortfall: number; // Missing Airtel inflow/opening balance needed to explain recorded outflows
   availableCashOnHand: number; // Money in pocket cash drawer
   totalCombinedNetWorth: number; // Bank + MoMo + Cash, excluding external savings destination
 }
@@ -324,18 +329,21 @@ export function calculateCashbookBalances(
   let cashBorrowedFundsReceived = 0;
 
   for (const debt of debts) {
+    const originalDebtAmount = Math.max(0, Number(debt.originalAmount) || 0);
+    let loggedRepaymentTotal = 0;
+
     if (debt.type === 'borrowed') {
       const receivedAccount = getBorrowedDebtReceivedAccount(debt);
-      const principal = Math.max(0, Number(debt.originalAmount) || 0);
-      if (receivedAccount === 'bank_account') bankBorrowedFundsReceived += principal;
-      else if (receivedAccount === 'airtel_mobile_money') airtelBorrowedFundsReceived += principal;
-      else if (receivedAccount === 'cash_on_hand') cashBorrowedFundsReceived += principal;
-      else mtnBorrowedFundsReceived += principal;
+      if (receivedAccount === 'bank_account') bankBorrowedFundsReceived += originalDebtAmount;
+      else if (receivedAccount === 'airtel_mobile_money') airtelBorrowedFundsReceived += originalDebtAmount;
+      else if (receivedAccount === 'cash_on_hand') cashBorrowedFundsReceived += originalDebtAmount;
+      else mtnBorrowedFundsReceived += originalDebtAmount;
     }
 
     for (const rep of debt.repayments || []) {
       const amount = Number(rep.amount) || 0;
       if (amount <= 0) continue;
+      loggedRepaymentTotal += amount;
 
       const acct: AccountType = rep.account || (
         rep.paymentMethod === 'Bank Transfer' || rep.paymentMethod === 'Bank Direct / Card Online'
@@ -357,6 +365,28 @@ export function calculateCashbookBalances(
         else if (acct === 'airtel_mobile_money') airtelDebtRepaymentsReceived += amount;
         else if (acct === 'cash_on_hand') cashDebtRepaymentsReceived += amount;
         else mtnDebtRepaymentsReceived += amount;
+      }
+    }
+
+    const effectiveRepaidAmount = Math.min(
+      originalDebtAmount,
+      Math.max(
+        loggedRepaymentTotal,
+        Number(debt.repaidAmount) || 0,
+        debt.status === 'fully_repaid' ? originalDebtAmount : 0
+      )
+    );
+    const impliedRepaymentAmount = Math.max(0, effectiveRepaidAmount - loggedRepaymentTotal);
+
+    if (impliedRepaymentAmount > 0) {
+      if (debt.type === 'borrowed') {
+        const fallbackAccount = getBorrowedDebtReceivedAccount(debt);
+        if (fallbackAccount === 'bank_account') bankDebtRepaymentsPaid += impliedRepaymentAmount;
+        else if (fallbackAccount === 'airtel_mobile_money') airtelDebtRepaymentsPaid += impliedRepaymentAmount;
+        else if (fallbackAccount === 'cash_on_hand') cashDebtRepaymentsPaid += impliedRepaymentAmount;
+        else mtnDebtRepaymentsPaid += impliedRepaymentAmount;
+      } else if (debt.type === 'lent') {
+        cashDebtRepaymentsReceived += impliedRepaymentAmount;
       }
     }
   }
@@ -497,10 +527,18 @@ export function calculateCashbookBalances(
   const availableBankBalance = totalBankInflows + bankBorrowedFundsReceived + bankDebtRepaymentsReceived + totalMoMoToBankReceived - totalBankToMobileTransferred - directBankSpendings - bankCashouts - bankDebtRepaymentsPaid;
 
   // MTN MoMo Balance = Inflows + Debt Repayments Collected + Bank In + Airtel In - MoMo Spends - MoMo Cashouts - Savings - Transfers to Airtel - Transfers to Bank - Debt Repayments Paid
-  const availableMtnBalance = totalMtnInflows + mtnBorrowedFundsReceived + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnSavingsDeductions - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
+  const rawAvailableMtnBalance = totalMtnInflows + mtnBorrowedFundsReceived + mtnDebtRepaymentsReceived + bankToMtn + airtelToMtnPrincipal - mtnSpent - mtnCashouts - mtnSavingsDeductions - mtnToAirtelTotalDeducted - mtnToBankTotalDeducted - mtnDebtRepaymentsPaid;
 
   // Airtel Money Balance = Inflows + Debt Repayments Collected + Bank In + MTN In - MoMo Spends - MoMo Cashouts - Transfers to MTN - Transfers to Bank - Debt Repayments Paid
-  const availableAirtelBalance = totalAirtelInflows + airtelBorrowedFundsReceived + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelToBankTotalDeducted - airtelDebtRepaymentsPaid;
+  const rawAvailableAirtelBalance = totalAirtelInflows + airtelBorrowedFundsReceived + airtelDebtRepaymentsReceived + bankToAirtel + mtnToAirtelPrincipal - airtelSpent - airtelCashouts - airtelToMtnTotalDeducted - airtelToBankTotalDeducted - airtelDebtRepaymentsPaid;
+
+  // Mobile wallets cannot be physically negative. A negative calculated value means
+  // the records are missing a wallet top-up/opening balance, so keep the shortfall
+  // for audit purposes but display the real cash wallet floor as zero.
+  const mtnWalletShortfall = Math.max(0, -rawAvailableMtnBalance);
+  const airtelWalletShortfall = Math.max(0, -rawAvailableAirtelBalance);
+  const availableMtnBalance = Math.max(0, rawAvailableMtnBalance);
+  const availableAirtelBalance = Math.max(0, rawAvailableAirtelBalance);
 
   const availableMobileMoneyBalance = availableMtnBalance + availableAirtelBalance;
 
@@ -588,6 +626,10 @@ export function calculateCashbookBalances(
     availableMobileMoneyBalance,
     availableMtnBalance,
     availableAirtelBalance,
+    rawAvailableMtnBalance,
+    rawAvailableAirtelBalance,
+    mtnWalletShortfall,
+    airtelWalletShortfall,
     availableCashOnHand,
     totalCombinedNetWorth,
   };

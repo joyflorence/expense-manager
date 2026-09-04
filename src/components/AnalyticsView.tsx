@@ -234,6 +234,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               <span className="text-amber-600 dark:text-amber-400 font-semibold">MTN: {formatUGX(balances.availableMtnBalance)}</span>
               <span className="text-rose-600 dark:text-rose-400 font-semibold">Airtel: {formatUGX(balances.availableAirtelBalance)}</span>
             </div>
+            {(balances.mtnWalletShortfall > 0 || balances.airtelWalletShortfall > 0) && (
+              <div className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 px-2 py-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
+                Wallet balance was kept at zero where all-time deductions are higher than recorded wallet inflows.
+              </div>
+            )}
           </div>
 
           {/* Card 3: Cashouts Inflow */}
