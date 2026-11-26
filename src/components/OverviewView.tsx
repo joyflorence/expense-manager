@@ -157,10 +157,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
           <button
             onClick={() => onOpenExpenseModal('spending')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 border border-slate-700 cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-800 active:scale-95 dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Log Expense</span>
+            <span>Record expense</span>
           </button>
         </div>
       </div>
@@ -1010,10 +1010,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </button>
               <button
                 onClick={() => onOpenExpenseModal('spending')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-800 active:scale-95 dark:bg-emerald-600 dark:hover:bg-emerald-500"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                Log Expense
+                Record expense
               </button>
             </div>
           </div>

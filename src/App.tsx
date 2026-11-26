@@ -1,155 +1,95 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Plus, Receipt, ArrowDownLeft, LogOut, ArrowLeft, RotateCcw } from 'lucide-react';
-import { Expense, MonthlyBudget, DebtItem, Inflow, PaymentMethod, AccountType, DateFilterState, DateFilterMode } from './types';
-import { INITIAL_EXPENSES, INITIAL_BUDGETS, INITIAL_DEBTS, INITIAL_INFLOWS } from './data/mockData';
-import { Navbar, ViewTab } from './components/Navbar';
-import { OverviewView } from './components/OverviewView';
+import React, { useEffect, useRef, useState } from 'react';
+import { Expense, PaymentMethod, DateFilterState } from './types';
+import { Navbar } from './components/Navbar';
 import { ExpenseView } from './components/ExpenseView';
-import { AnalyticsView } from './components/AnalyticsView';
-import { DebtView } from './components/DebtView';
 import { ExpenseModal } from './components/ExpenseModal';
-import { InflowModal } from './components/InflowModal';
-import { BudgetModal } from './components/BudgetModal';
-import { DebtModal } from './components/DebtModal';
-import { RepaymentModal } from './components/RepaymentModal';
 import { ExportImportModal } from './components/ExportImportModal';
-import { MobileNavigation } from './components/MobileNavigation';
-import { SidebarNavigation } from './components/SidebarNavigation';
-import { CashbookState, loadCashbook, saveRecord, deleteRecord, RecordKind } from './api';
+import { deleteExpense, loadExpenses, saveExpense } from './api';
 import { supabase, useSupabaseSession } from './auth';
 import { AuthPage } from './components/AuthPage';
 
+const localDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const currentDate = () => localDateString(new Date());
+const currentMonth = () => currentDate().slice(0, 7);
+
 export default function App() {
   const session = useSupabaseSession();
-  // Financial Cashbook State
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [inflows, setInflows] = useState<Inflow[]>([]);
-  const [budgets, setBudgets] = useState<MonthlyBudget[]>([]);
-  const [debts, setDebts] = useState<DebtItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading');
   const [syncError, setSyncError] = useState<string | null>(null);
-  const previousRecords = useRef<CashbookState | null>(null);
+  const previousExpenses = useRef<Expense[] | null>(null);
   const syncQueue = useRef(Promise.resolve());
 
-  const [currentTab, setCurrentTab] = useState<ViewTab>('overview');
-
-  // Theme state logic (Dark vs Light)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('omnitrack_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return 'light';
+    return saved === 'dark' ? 'dark' : 'light';
   });
-
-  useEffect(() => {
-    localStorage.setItem('omnitrack_theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-
   const [dateFilter, setDateFilter] = useState<DateFilterState>(() => {
-    const savedMonth = localStorage.getItem('omnitrack_selected_month') || 'all';
+    const storedMonth = localStorage.getItem('omnitrack_selected_month') || 'all';
+    const savedMonth = storedMonth === 'all' || /^\d{4}-(0[1-9]|1[0-2])$/.test(storedMonth) ? storedMonth : 'all';
+    const today = currentDate();
     return {
       mode: savedMonth === 'all' ? 'all' : 'month',
-      selectedMonth: savedMonth === 'all' ? '2026-08' : savedMonth,
-      selectedDay: todayStr,
-      startDate: `${todayStr.slice(0, 7)}-01`,
-      endDate: todayStr,
+      selectedMonth: savedMonth === 'all' ? currentMonth() : savedMonth,
+      selectedDay: today,
+      startDate: `${today.slice(0, 7)}-01`,
+      endDate: today,
     };
   });
-
-  const handleDateFilterChange = (filter: DateFilterState) => {
-    setDateFilter(filter);
-    if (filter.mode === 'all') {
-      localStorage.setItem('omnitrack_selected_month', 'all');
-    } else {
-      localStorage.setItem('omnitrack_selected_month', filter.selectedMonth);
-    }
-  };
-
-  const selectedMonth = dateFilter.mode === 'all' ? 'all' : dateFilter.selectedMonth;
-
-  // Modal states
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
-  const [expenseModalInitialMode, setExpenseModalInitialMode] = useState<'spending' | 'transfer' | 'cashout' | 'savings' | undefined>(undefined);
-
-  const [isInflowModalOpen, setIsInflowModalOpen] = useState(false);
-  const [inflowToEdit, setInflowToEdit] = useState<Inflow | null>(null);
-
-  const [isDebtModalOpen, setIsDebtModalOpen] = useState(false);
-  const [debtToEdit, setDebtToEdit] = useState<DebtItem | null>(null);
-
-  const [isRepaymentModalOpen, setIsRepaymentModalOpen] = useState(false);
-  const [debtForRepayment, setDebtForRepayment] = useState<DebtItem | null>(null);
-
-  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
+  useEffect(() => {
+    localStorage.setItem('omnitrack_theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    window.setTimeout(() => {
+      setToastMessage((current) => current === message ? null : current);
     }, 3500);
-  };
-
-  const downloadBackup = (reason: 'clear' | 'reset') => {
-    const backup = { app: 'Expense Manager', exportedAt: new Date().toISOString(), expenses, inflows, budgets, debts };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Expense_Manager_before_${reason}_${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const createId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
-  const isPositiveAmount = (value: number) => Number.isFinite(value) && value > 0;
-
-  const applyRemoteState = (state: CashbookState) => {
-    setExpenses(state.expenses || []);
-    setInflows(state.inflows || []);
-    setBudgets(state.budgets || []);
-    setDebts(state.debts || []);
   };
 
   useEffect(() => {
     if (!session.data) {
+      setExpenses([]);
       setIsLoaded(false);
-      previousRecords.current = null;
+      setSyncStatus('loading');
+      setSyncError(null);
+      previousExpenses.current = null;
       return;
     }
+
     let cancelled = false;
     setIsLoaded(false);
     setSyncStatus('loading');
     setSyncError(null);
-    void loadCashbook()
-      .then((state) => {
+    void loadExpenses()
+      .then((loadedExpenses) => {
         if (cancelled) return;
-        applyRemoteState(state);
-        previousRecords.current = state;
+        setExpenses(loadedExpenses);
+        previousExpenses.current = loadedExpenses;
         setIsLoaded(true);
         setSyncStatus('saved');
-        setSyncError(null);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         if (cancelled) return;
-        setIsLoaded(false);
-        setSyncStatus('error');
-        const message = error instanceof Error ? error.message : 'Could not connect to the cashbook database.';
+        const message = error instanceof Error ? error.message : 'Could not load expenses.';
         setSyncError(message);
+        setSyncStatus('error');
         showToast(message);
       });
+
     return () => {
       cancelled = true;
     };
@@ -157,223 +97,110 @@ export default function App() {
 
   useEffect(() => {
     if (!isLoaded || !session.data) return;
-    const current: CashbookState = { expenses, inflows, budgets, debts };
-    const previous = previousRecords.current;
+    const previous = previousExpenses.current;
     if (!previous) {
-      previousRecords.current = current;
+      previousExpenses.current = expenses;
       return;
     }
 
-    const groups: Array<[RecordKind, Array<{ id?: string }>, Array<{ id?: string }>]> = [
-      ['expense', current.expenses, previous.expenses],
-      ['inflow', current.inflows, previous.inflows],
-      ['budget', current.budgets.map((budget) => ({ ...budget, id: budget.month })), previous.budgets.map((budget) => ({ ...budget, id: budget.month }))],
-      ['debt', current.debts, previous.debts],
-    ];
-    const writes: Promise<unknown>[] = [];
-    for (const [kind, currentRecords, previousRecordsForKind] of groups) {
-      const previousById = new Map(previousRecordsForKind.map((record) => [record.id, record]));
-      for (const record of currentRecords) {
-        if (record.id && JSON.stringify(record) !== JSON.stringify(previousById.get(record.id))) {
-          writes.push(saveRecord(kind, record));
-        }
-      }
-      const currentIds = new Set(currentRecords.map((record) => record.id));
-      for (const record of previousRecordsForKind) {
-        if (record.id && !currentIds.has(record.id)) writes.push(deleteRecord(kind, record.id));
-      }
-    }
-    if (writes.length === 0) return;
+    const previousById = new Map(previous.map((expense) => [expense.id, expense]));
+    const currentIds = new Set(expenses.map((expense) => expense.id));
+    const changed = expenses.filter((expense) => (
+      !previousById.has(expense.id) ||
+      JSON.stringify(expense) !== JSON.stringify(previousById.get(expense.id))
+    ));
+    const removed = previous.filter((expense) => !currentIds.has(expense.id));
+    if (changed.length === 0 && removed.length === 0) return;
+
     setSyncStatus('saving');
-    syncQueue.current = syncQueue.current
-      .catch(() => undefined)
-      .then(() => Promise.all(writes))
-      .then(() => {
-        previousRecords.current = current;
-        setSyncStatus('saved');
-      })
-      .catch(() => setSyncStatus('error'));
-  }, [isLoaded, session.data, expenses, inflows, budgets, debts]);
-
-  useEffect(() => {
-    localStorage.setItem('omnitrack_selected_month', selectedMonth);
-  }, [selectedMonth]);
-
-  // Refresh data handler
-  const handleRefresh = () => {
-    setSyncStatus('loading');
-    setSyncError(null);
-    void loadCashbook()
-      .then((state) => {
-        applyRemoteState(state);
-        previousRecords.current = state;
-        setIsLoaded(true);
+    const operation = syncQueue.current
+      .then(async () => {
+        await Promise.all([
+          ...changed.map((expense) => saveExpense(expense)),
+          ...removed.map((expense) => deleteExpense(expense.id)),
+        ]);
+        previousExpenses.current = expenses;
         setSyncStatus('saved');
         setSyncError(null);
-        showToast(`Data Synced! ${state.expenses.length} transactions, ${state.inflows.length} inflows loaded.`);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Could not save expense changes.';
         setSyncStatus('error');
-        const message = error instanceof Error ? error.message : 'Could not refresh from Supabase.';
         setSyncError(message);
         showToast(message);
       });
+    syncQueue.current = operation;
+  }, [expenses, isLoaded, session.data]);
+
+  const handleDateFilterChange = (filter: DateFilterState) => {
+    setDateFilter(filter);
+    localStorage.setItem('omnitrack_selected_month', filter.mode === 'all' ? 'all' : filter.selectedMonth);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // Ignore signOut network errors
-    }
-    setIsLoaded(false);
-    setSyncStatus('loading');
-    setSyncError(null);
-    setExpenses([]);
-    setInflows([]);
-    setBudgets([]);
-    setDebts([]);
-    previousRecords.current = null;
-  };
-
-  const handleRetrySync = () => {
-    handleRefresh();
-  };
-
-  // Derived available months list
-  const availableMonths = [
-    'all',
-    ...Array.from(
-      new Set([
-        ...expenses.map((e) => (e.date ? e.date.slice(0, 7) : '2026-08')),
-        ...inflows.map((i) => (i.date ? i.date.slice(0, 7) : '2026-08')),
-        ...budgets.map((b) => b.month),
-        '2026-07',
-        '2026-08',
-      ])
-    ).filter((m) => m && m.length === 7 && m !== 'all').sort().reverse(),
-  ];
-
-  // Week range calculator for 'this_week' filter mode
-  const getWeekRange = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const mon = new Date(d.setDate(diff));
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    return {
-      start: mon.toISOString().slice(0, 10),
-      end: sun.toISOString().slice(0, 10),
-    };
-  };
-
-  // Date filtering logic based on dateFilter.mode
-  const filterByDate = (itemDate?: string): boolean => {
-    if (!itemDate) return true;
+  const filterByDate = (expenseDate: string) => {
+    const today = currentDate();
     if (dateFilter.mode === 'all') return true;
-    if (dateFilter.mode === 'month') return itemDate.slice(0, 7) === dateFilter.selectedMonth;
-    if (dateFilter.mode === 'day') return itemDate === dateFilter.selectedDay;
-    if (dateFilter.mode === 'today') return itemDate === todayStr;
+    if (dateFilter.mode === 'month') return expenseDate.slice(0, 7) === dateFilter.selectedMonth;
+    if (dateFilter.mode === 'day') return expenseDate === dateFilter.selectedDay;
+    if (dateFilter.mode === 'today') return expenseDate === today;
     if (dateFilter.mode === 'range') {
-      const start = dateFilter.startDate || '1970-01-01';
-      const end = dateFilter.endDate || '2099-12-31';
-      return itemDate >= start && itemDate <= end;
+      return (!dateFilter.startDate || expenseDate >= dateFilter.startDate) &&
+        (!dateFilter.endDate || expenseDate <= dateFilter.endDate);
     }
     if (dateFilter.mode === 'this_week') {
-      const { start, end } = getWeekRange(todayStr);
-      return itemDate >= start && itemDate <= end;
+      const current = new Date(`${today}T12:00:00`);
+      const weekday = current.getDay() || 7;
+      current.setDate(current.getDate() - weekday + 1);
+      const monday = localDateString(current);
+      current.setDate(current.getDate() + 6);
+      const sunday = localDateString(current);
+      return expenseDate >= monday && expenseDate <= sunday;
     }
     return true;
   };
 
-  // Filtered dataset for active date scope
-  const currentFilteredExpenses = expenses.filter((e) => filterByDate(e.date));
-  const currentFilteredInflows = inflows.filter((i) => filterByDate(i.date));
+  const filteredExpenses = expenses.filter((expense) => filterByDate(expense.date));
+  const availableMonths = Array.from(new Set([
+    currentMonth(),
+    dateFilter.selectedMonth,
+    ...expenses.map((expense) => expense.date.slice(0, 7)),
+  ])).filter((month) => /^\d{4}-\d{2}$/.test(month)).sort().reverse();
 
-  const currentBudget =
-    budgets.find((b) => b.month === dateFilter.selectedMonth) || {
-      month: dateFilter.selectedMonth || '2026-08',
-      workBudget: 200000,
-      personalBudget: 200000,
-      monthlySalary: 500000,
-      savingsTarget: 20000,
-      localTax: 15000,
-      nssfDeduction: 0,
-    };
-
-  // Inflow handlers
-  const handleSaveInflow = (inflowData: Omit<Inflow, 'id'>, editingId?: string) => {
-    if (!isPositiveAmount(inflowData.amount) || (inflowData.taxDeduction || 0) < 0 || inflowData.netAmount < 0) {
-      showToast('Enter a valid positive inflow amount and non-negative deductions.');
-      return;
-    }
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const infDate = inflowData.date || todayStr;
-
-    if (editingId) {
-      setInflows((prev) => {
-        const updated = prev.map((i) => (i.id === editingId ? { ...i, ...inflowData, date: infDate } : i));
-        return updated;
-      });
-      showToast(`Inflow "${inflowData.title}" updated!`);
-    } else {
-      const newInflow: Inflow = {
-        id: createId('inf'),
-        ...inflowData,
-        date: infDate,
-      };
-      setInflows((prev) => {
-        const updated = [newInflow, ...prev];
-        return updated;
-      });
-      showToast(`Cash Inflow "${inflowData.title}" (+${inflowData.amount.toLocaleString()} UGX) logged!`);
-    }
-
-    const targetMonth = infDate.slice(0, 7);
-    if (targetMonth && targetMonth.length === 7 && selectedMonth !== 'all' && selectedMonth !== targetMonth) {
-      setSelectedMonth(targetMonth);
-    }
-    setInflowToEdit(null);
-  };
-
-  const handleDeleteInflow = (inflowId: string) => {
-    if (!window.confirm('Delete this inflow record? This cannot be undone.')) return;
-    setInflows((prev) => {
-      const updated = prev.filter((i) => i.id !== inflowId);
-      return updated;
-    });
-    showToast('Inflow record deleted');
-  };
-
-  // Expense handlers
-  const handleSaveExpense = (expenseData: Omit<Expense, 'id'>, editingId?: string, separateTaxAmount = 0, separateTaxRate = 0) => {
+  const handleSaveExpense = (
+    expenseData: Omit<Expense, 'id'>,
+    editingId?: string,
+    separateTaxAmount = 0,
+    separateTaxRate = 0
+  ) => {
     if (
-      !isPositiveAmount(expenseData.amount) ||
+      !Number.isFinite(expenseData.amount) ||
+      expenseData.amount <= 0 ||
       !Number.isFinite(separateTaxAmount) ||
       separateTaxAmount < 0 ||
       !Number.isFinite(separateTaxRate) ||
       separateTaxRate < 0 ||
+      !Number.isFinite(expenseData.taxAmount) ||
       expenseData.taxAmount < 0 ||
+      !Number.isFinite(expenseData.totalAmount) ||
       expenseData.totalAmount < expenseData.amount
     ) {
-      showToast('Enter a valid positive amount and non-negative fee or tax.');
+      showToast('Enter a valid positive amount and non-negative tax or fee.');
       return;
     }
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const expDate = expenseData.date || todayStr;
+
+    const expenseDate = expenseData.date || currentDate();
     const taxPaymentMethod: PaymentMethod = expenseData.deductionSource === 'bank_account'
       ? 'Bank Direct / Card Online'
       : expenseData.deductionSource === 'cash_on_hand'
-      ? 'Cash'
-      : 'Mobile Money Direct (Airtime/Data/Pay)';
+        ? 'Cash'
+        : 'Mobile Money Direct (Airtime/Data/Pay)';
 
     if (editingId) {
-      const currentTaxEntry = expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === editingId);
-      const updatedTaxEntry: Expense | null = separateTaxAmount > 0
+      const existingTax = expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === editingId);
+      const taxEntry: Expense | null = separateTaxAmount > 0
         ? {
-            ...(currentTaxEntry || expenseData),
-            id: currentTaxEntry?.id || createId('tax'),
+            ...(existingTax || expenseData),
+            id: existingTax?.id || crypto.randomUUID(),
             title: `${expenseData.title} - Tax / Fee`,
             amount: separateTaxAmount,
             taxAmount: 0,
@@ -393,33 +220,31 @@ export default function App() {
             isTaxEntry: true,
             parentExpenseId: editingId,
             vendor: expenseData.vendor,
-            date: expDate,
+            date: expenseDate,
             notes: `Tax or fee recorded separately for ${expenseData.title}`,
           }
         : null;
-      setExpenses((prev) => {
-        const updated = prev
-          .filter((e) => updatedTaxEntry || !(e.isTaxEntry && e.parentExpenseId === editingId))
-          .map((e) => (e.id === editingId ? { ...e, ...expenseData, date: expDate } : e));
-        if (updatedTaxEntry) {
-          const taxExists = updated.some((e) => e.id === updatedTaxEntry.id);
-          return taxExists
-            ? updated.map((e) => (e.id === updatedTaxEntry.id ? updatedTaxEntry : e))
-            : [updatedTaxEntry, ...updated];
-        }
-        return updated;
+
+      setExpenses((previous) => {
+        const updated = previous
+          .filter((expense) => taxEntry || !(expense.isTaxEntry && expense.parentExpenseId === editingId))
+          .map((expense) => expense.id === editingId ? { ...expense, ...expenseData, date: expenseDate } : expense);
+        if (!taxEntry) return updated;
+        return updated.some((expense) => expense.id === taxEntry.id)
+          ? updated.map((expense) => expense.id === taxEntry.id ? taxEntry : expense)
+          : [taxEntry, ...updated];
       });
-      showToast(`Expense "${expenseData.title}" updated!`);
+      showToast(`Expense "${expenseData.title}" updated.`);
     } else {
       const newExpense: Expense = {
-        id: createId('exp'),
+        id: crypto.randomUUID(),
         ...expenseData,
-        date: expDate,
+        date: expenseDate,
       };
       const taxEntry: Expense | null = separateTaxAmount > 0
         ? {
             ...newExpense,
-            id: createId('tax'),
+            id: crypto.randomUUID(),
             title: `${expenseData.title} - Tax / Fee`,
             amount: separateTaxAmount,
             taxAmount: 0,
@@ -439,256 +264,104 @@ export default function App() {
             notes: `Tax or fee recorded separately for ${expenseData.title}`,
           }
         : null;
-      setExpenses((prev) => {
-        const updated = taxEntry ? [newExpense, taxEntry, ...prev] : [newExpense, ...prev];
-        return updated;
-      });
-      showToast(`Expense "${expenseData.title}" logged successfully${taxEntry ? ' with a separate tax/fee entry' : ''}!`);
+      setExpenses((previous) => taxEntry ? [newExpense, taxEntry, ...previous] : [newExpense, ...previous]);
+      showToast(`Expense "${expenseData.title}" recorded${taxEntry ? ' with separate tax or fee' : ''}.`);
     }
-
-    // Auto-switch view month if expense date is in a different month
-    const targetMonth = expDate.slice(0, 7);
-    if (targetMonth && targetMonth.length === 7 && selectedMonth !== 'all' && selectedMonth !== targetMonth) {
-      setSelectedMonth(targetMonth);
-    }
-    setExpenseToEdit(null);
   };
 
   const handleDeleteExpense = (expenseId: string) => {
-    if (!window.confirm('Delete this expense or tax/fee record? This cannot be undone.')) return;
-    setExpenses((prev) => {
-      const deletedRecord = prev.find((e) => e.id === expenseId);
-      const updated = prev.filter((e) =>
-        e.id !== expenseId &&
-        !(deletedRecord && !deletedRecord.isTaxEntry && e.isTaxEntry && e.parentExpenseId === expenseId)
-      );
-      return updated;
+    setExpenses((previous) => {
+      const selected = previous.find((expense) => expense.id === expenseId);
+      return previous.filter((expense) => (
+        expense.id !== expenseId &&
+        !(selected && !selected.isTaxEntry && expense.isTaxEntry && expense.parentExpenseId === expenseId)
+      ));
     });
-    showToast('Expense record deleted');
+    showToast('Expense record deleted.');
   };
 
   const handleEditExpense = (expense: Expense) => {
     if (expense.isTaxEntry) {
-      showToast('Edit this tax/fee through its linked expense.');
+      showToast('Edit this tax or fee through its linked expense.');
       return;
     }
     setExpenseToEdit(expense);
     setIsExpenseModalOpen(true);
   };
 
-  // Budget handler
-  const handleSaveBudget = (updatedBudget: MonthlyBudget) => {
-    if (updatedBudget.workBudget < 0 || updatedBudget.personalBudget < 0 || (updatedBudget.monthlySalary || 0) < 0 || (updatedBudget.savingsTarget || 0) < 0) {
-      showToast('Budget amounts cannot be negative.');
-      return;
-    }
-    setBudgets((prev) => {
-      const exists = prev.some((b) => b.month === updatedBudget.month);
-      if (exists) {
-        return prev.map((b) => (b.month === updatedBudget.month ? updatedBudget : b));
-      }
-      return [...prev, updatedBudget];
-    });
-    showToast('Salary and financial targets saved!');
+  const downloadBackup = (records: Expense[], reason: 'clear') => {
+    const backup = { app: 'Expense Manager', exportedAt: new Date().toISOString(), expenses: records };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Expense_Manager_before_${reason}_${currentDate()}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
-  const handleUpdateBudgetSalary = (salary: number, savingsTarget: number) => {
-    const targetMonth = selectedMonth === 'all' ? '2026-08' : selectedMonth;
-    setBudgets((prev) => {
-      const existing = prev.find((b) => b.month === targetMonth);
-      if (existing) {
-        return prev.map((b) =>
-          b.month === targetMonth
-            ? { ...b, monthlySalary: salary, savingsTarget }
-            : b
-        );
-      } else {
-        return [
-          ...prev,
-          {
-            month: targetMonth,
-            workBudget: 200000,
-            personalBudget: 200000,
-            monthlySalary: salary,
-            savingsTarget,
-            localTax: 15000,
-            nssfDeduction: 0,
-          },
-        ];
-      }
-    });
-    showToast(`Salary set to ${salary.toLocaleString()} UGX & Target Savings set to ${savingsTarget.toLocaleString()} UGX`);
-  };
-
-  // Debt & Loan Handlers
-  const handleSaveDebt = (debtData: Omit<DebtItem, 'id' | 'repaidAmount' | 'status' | 'repayments'>) => {
-    if (!isPositiveAmount(debtData.originalAmount)) {
-      showToast('Enter a valid positive debt amount.');
-      return;
-    }
-    if (debtToEdit) {
-      setDebts((prev) =>
-        prev.map((d) =>
-          d.id === debtToEdit.id
-            ? {
-                ...d,
-                ...debtData,
-                status:
-                  d.repaidAmount >= debtData.originalAmount
-                    ? 'fully_repaid'
-                    : debtData.isGiftOrRemittance
-                    ? 'forgiven_gift'
-                    : 'active',
-              }
-            : d
-        )
-      );
-      showToast(`Updated debt/transfer record "${debtData.title}"`);
-    } else {
-      const newDebt: DebtItem = {
-        ...debtData,
-        id: createId('debt'),
-        repaidAmount: 0,
-        status: debtData.isGiftOrRemittance ? 'forgiven_gift' : 'active',
-        repayments: [],
-      };
-      setDebts((prev) => [newDebt, ...prev]);
-      showToast(`Added new debt/transfer record "${debtData.title}"`);
-    }
-  };
-
-  const handleDeleteDebt = (debtId: string) => {
-    if (!window.confirm('Delete this debt record and its repayment history? This cannot be undone.')) return;
-    setDebts((prev) => prev.filter((d) => d.id !== debtId));
-    showToast('Deleted debt/transfer record');
-  };
-
-  const handleSaveRepayment = (
-    debtId: string,
-    amount: number,
-    date: string,
-    paymentMethod: PaymentMethod | undefined,
-    notes: string,
-    account: AccountType
-  ) => {
-    const debt = debts.find((item) => item.id === debtId);
-    if (!debt || !isPositiveAmount(amount) || amount > Math.max(0, debt.originalAmount - debt.repaidAmount)) {
-      showToast('Repayment must be positive and cannot exceed the remaining balance.');
-      return;
-    }
-    setDebts((prev) =>
-      prev.map((d) => {
-        if (d.id !== debtId) return d;
-        const newRepaidAmount = d.repaidAmount + amount;
-        const isSettled = newRepaidAmount >= d.originalAmount;
-        const newRepayments = [
-          ...(d.repayments || []),
-          {
-            id: createId('rep'),
-            amount,
-            date,
-            paymentMethod,
-            account,
-            notes,
-          },
-        ];
-
-        return {
-          ...d,
-          repaidAmount: newRepaidAmount,
-          status: isSettled ? 'fully_repaid' : 'partially_repaid',
-          repayments: newRepayments,
-        };
-      })
-    );
-    showToast(`Logged payment of ${amount.toLocaleString()} UGX`);
-  };
-
-  const handleToggleFullyRepaid = (debtId: string) => {
-    setDebts((prev) =>
-      prev.map((d) => {
-        if (d.id !== debtId) return d;
-        const currentlyRepaid = d.status === 'fully_repaid' || d.repaidAmount >= d.originalAmount;
-        return {
-          ...d,
-          repaidAmount: currentlyRepaid ? 0 : d.originalAmount,
-          status: currentlyRepaid ? 'active' : 'fully_repaid',
-        };
-      })
-    );
-    showToast('Updated repayment status');
-  };
-
-  // Clear all data for clean slate
   const handleClearData = () => {
-    if (!window.confirm('Clear all expenses, inflows, budgets, debts, and repayment history from Supabase? A JSON backup will download before deletion.')) return;
-    downloadBackup('clear');
+    if (!window.confirm('Clear all expense and linked tax/fee records? A JSON backup will download first. Other legacy cashbook records will not be changed.')) return;
+    downloadBackup(expenses, 'clear');
     setExpenses([]);
-    setInflows([]);
-    setBudgets([]);
-    setDebts([]);
-    showToast('Cleared all cashbook transactions and debt registers.');
+    showToast('Expense records cleared.');
   };
 
-  // Reset clean baseline data
-  const handleResetData = () => {
-    if (!window.confirm('Reset this cashbook to the app baseline, replacing your expenses, inflows, budgets, debts, and repayment history? A JSON backup will download first.')) return;
-    downloadBackup('reset');
-    setExpenses(INITIAL_EXPENSES);
-    setInflows(INITIAL_INFLOWS);
-    setBudgets(INITIAL_BUDGETS);
-    setDebts(INITIAL_DEBTS);
-    showToast('Clean cashbook slate ready for your entries.');
+  const handleImportData = (data: { expenses: Expense[] }) => {
+    setExpenses(data.expenses);
+    showToast('Expense backup imported.');
   };
 
-  // Import JSON backup
-  const handleImportData = (data: { expenses: Expense[]; inflows?: Inflow[]; budgets: MonthlyBudget[]; debts?: DebtItem[] }) => {
-    if (data.expenses) setExpenses(data.expenses);
-    if (data.inflows) setInflows(data.inflows);
-    if (data.budgets) setBudgets(data.budgets);
-    if (data.debts) setDebts(data.debts);
+  const handleRefresh = async () => {
+    setSyncStatus('loading');
+    setSyncError(null);
+    try {
+      await syncQueue.current;
+      const latestExpenses = await loadExpenses();
+      previousExpenses.current = latestExpenses;
+      setExpenses(latestExpenses);
+      setIsLoaded(true);
+      setSyncStatus('saved');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not refresh expenses.';
+      setSyncError(message);
+      setSyncStatus('error');
+      showToast(message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        showToast(`Could not sign out: ${error.message}`);
+        return;
+      }
+      setExpenses([]);
+      previousExpenses.current = null;
+      setIsLoaded(false);
+      setSyncStatus('loading');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected sign-out error.';
+      showToast(`Could not sign out: ${message}`);
+    }
   };
 
   if (session.isPending) {
-    return <main className="min-h-screen bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300 grid place-items-center">Checking your session…</main>;
+    return <main className="grid min-h-screen place-items-center bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300">Checking your session…</main>;
   }
-
   if (!session.data) return <AuthPage />;
 
   if (!isLoaded) {
     return (
-      <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 grid place-items-center p-5">
+      <main className="grid min-h-screen place-items-center bg-slate-50 p-5 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <div className="max-w-md space-y-4 text-center">
-          <p className={syncStatus === 'error' ? 'text-rose-400 font-bold text-base' : 'text-slate-300'}>
-            {syncStatus === 'error' ? 'Could not load your cashbook from Supabase.' : 'Loading your cashbook…'}
+          <p className={syncStatus === 'error' ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}>
+            {syncStatus === 'error' ? syncError : 'Loading your expense records…'}
           </p>
           {syncStatus === 'error' && (
-            <>
-              <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-left text-xs text-rose-200 break-words font-mono">
-                {syncError || 'The cashbook API did not return a reason.'}
-              </p>
-              <p className="text-left text-xs text-slate-500 dark:text-slate-400">
-                Confirm your Supabase project credentials in your environment and run the migration in the Supabase SQL Editor.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => void handleSignOut()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-5 py-2.5 font-bold text-xs sm:text-sm text-slate-950 transition active:scale-95 shadow-md cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
-                  <span>Back to Sign In Page</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 px-4 py-2.5 font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 transition active:scale-95 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Retry Loading</span>
-                </button>
-              </div>
-            </>
+            <button type="button" onClick={() => void handleRefresh()} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500">
+              Try again
+            </button>
           )}
         </div>
       </main>
@@ -696,10 +369,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-200">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
       <Navbar
-        onTabChange={setCurrentTab}
         dateFilter={dateFilter}
         onDateFilterChange={handleDateFilterChange}
         availableMonths={availableMonths}
@@ -707,175 +378,53 @@ export default function App() {
           setExpenseToEdit(null);
           setIsExpenseModalOpen(true);
         }}
-        onOpenInflowModal={() => {
-          setInflowToEdit(null);
-          setIsInflowModalOpen(true);
-        }}
-        onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onClearData={handleClearData}
-        onResetData={handleResetData}
-        onRefresh={handleRefresh}
+        onRefresh={() => void handleRefresh()}
+        onSignOut={() => void handleSignOut()}
         theme={theme}
-        onToggleTheme={toggleTheme}
+        onToggleTheme={() => setTheme((previous) => previous === 'dark' ? 'light' : 'dark')}
       />
 
-      {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-bounce">
-          <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* Main Container */}
-      <div className="mx-auto flex max-w-7xl gap-5 px-4 sm:px-6 lg:px-8">
-        <SidebarNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
-
-        <main className="min-w-0 flex-1 py-5 pb-28 md:py-6 md:pb-20">
-          {currentTab === 'overview' && (
-            <OverviewView
-              expenses={currentFilteredExpenses}
-              inflows={currentFilteredInflows}
-              debts={debts}
-              budget={currentBudget}
-              selectedMonth={selectedMonth}
-              onEditExpense={handleEditExpense}
-              onDeleteExpense={handleDeleteExpense}
-              onOpenExpenseModal={() => {
-                setExpenseToEdit(null);
-                setIsExpenseModalOpen(true);
-              }}
-              onOpenInflowModal={() => {
-                setInflowToEdit(null);
-                setIsInflowModalOpen(true);
-              }}
-              onEditInflow={(inflow) => {
-                setInflowToEdit(inflow);
-                setIsInflowModalOpen(true);
-              }}
-              onDeleteInflow={handleDeleteInflow}
-              onNavigateToTab={setCurrentTab}
-              onUpdateBudgetSalary={handleUpdateBudgetSalary}
-            />
-          )}
-
-        {currentTab === 'expenses' && (
-          <ExpenseView
-            expenses={currentFilteredExpenses}
-            onAddExpense={() => {
-              setExpenseToEdit(null);
-              setExpenseModalInitialMode('spending');
-              setIsExpenseModalOpen(true);
-            }}
-            onOpenTransferModal={() => {
-              setExpenseToEdit(null);
-              setExpenseModalInitialMode('transfer');
-              setIsExpenseModalOpen(true);
-            }}
-            onEditExpense={handleEditExpense}
-            onDeleteExpense={handleDeleteExpense}
-          />
-        )}
-
-        {currentTab === 'debts' && (
-          <DebtView
-            debts={debts}
-            monthlySalary={currentBudget.monthlySalary || 500000}
-            onOpenDebtModal={() => {
-              setDebtToEdit(null);
-              setIsDebtModalOpen(true);
-            }}
-            onEditDebt={(debt) => {
-              setDebtToEdit(debt);
-              setIsDebtModalOpen(true);
-            }}
-            onDeleteDebt={handleDeleteDebt}
-            onOpenRepaymentModal={(debt) => {
-              setDebtForRepayment(debt);
-              setIsRepaymentModalOpen(true);
-            }}
-            onToggleFullyRepaid={handleToggleFullyRepaid}
-          />
-        )}
-
-        {currentTab === 'analytics' && (
-          <AnalyticsView
-            expenses={currentFilteredExpenses}
-            inflows={currentFilteredInflows}
-            debts={debts}
-            budget={currentBudget}
-            selectedMonth={selectedMonth}
-          />
-        )}
-        </main>
-      </div>
-
-      {/* Footer Status Bar with Quick Action */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 hidden bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 px-4 py-2 text-[11px] text-slate-500 font-mono md:flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={syncStatus === 'error' ? handleRetrySync : undefined}
-            className={`flex items-center gap-1.5 font-semibold ${syncStatus === 'error' ? 'text-rose-600 dark:text-rose-400 underline cursor-pointer' : 'text-emerald-600 dark:text-emerald-400'}`}
-          >
-            <span className={`w-2 h-2 rounded-full ${syncStatus === 'error' ? 'bg-rose-500' : syncStatus === 'saving' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-            {syncStatus === 'saving' ? 'SAVING TO SUPABASE…' : syncStatus === 'error' ? 'SYNC FAILED — RETRY' : 'SAVED TO SUPABASE'}
-          </button>
-          <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-          <span className="text-slate-600 dark:text-slate-400 hidden sm:inline">FISCAL RECONCILIATION: ENABLED</span>
-        </div>
-
-        {/* Instant Quick-Action Log Expense Button with CSS-only Tooltip */}
-        <div className="relative group flex items-center">
-          <button
-            id="footer-quick-expense-btn"
-            onClick={() => {
-              setExpenseToEdit(null);
-              setIsExpenseModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <Receipt className="w-3.5 h-3.5" />
-            <span>Quick Add Expense</span>
-          </button>
-
-          {/* Lightweight CSS-Only Tooltip */}
-          <div
-            id="footer-quick-expense-tooltip"
-            role="tooltip"
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-sans font-medium rounded-md shadow-lg whitespace-nowrap pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-30 border border-slate-700/80 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-slate-900 dark:after:border-t-slate-800"
-          >
-            Click to instantly log a new expense
+      <main className="mx-auto max-w-7xl px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+        {syncStatus === 'error' && syncError && (
+          <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+            <span>Could not sync expense changes: {syncError}</span>
+            <button type="button" onClick={() => void handleRefresh()} className="font-semibold underline">Retry</button>
           </div>
-        </div>
+        )}
+        <ExpenseView
+          expenses={filteredExpenses}
+          onAddExpense={() => {
+            setExpenseToEdit(null);
+            setIsExpenseModalOpen(true);
+          }}
+          onEditExpense={handleEditExpense}
+          onDeleteExpense={handleDeleteExpense}
+        />
+      </main>
 
-        <div className="flex items-center gap-4">
-          <span className="hidden sm:inline text-slate-400 dark:text-slate-500">INFLOW & OUTFLOW TRACKER</span>
-          <button onClick={() => void handleSignOut()} className="inline-flex items-center gap-1 text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 font-semibold" title="Sign out">
-            <LogOut className="h-3.5 w-3.5" /> Sign out
-          </button>
-          <span className="text-slate-600 dark:text-slate-400 font-semibold">EXPENSE MANAGER V2.4.0</span>
+      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-2 text-xs text-slate-500 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-400">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${syncStatus === 'error' ? 'bg-rose-500' : syncStatus === 'saving' ? 'animate-pulse bg-amber-500' : 'bg-emerald-500'}`} />
+            {syncStatus === 'saving' ? 'Saving expenses…' : syncStatus === 'error' ? 'Sync issue' : 'Expenses synced'}
+          </span>
+          <span className="hidden sm:inline">Expense Manager</span>
         </div>
       </footer>
 
-      <MobileNavigation
-        currentTab={currentTab}
-        onTabChange={setCurrentTab}
-        onAddExpense={() => {
-          setExpenseToEdit(null);
-          setExpenseModalInitialMode('spending');
-          setIsExpenseModalOpen(true);
-        }}
-      />
+      {toastMessage && (
+        <div role="status" className="fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-xl dark:bg-slate-700">
+          {toastMessage}
+        </div>
+      )}
 
-      {/* Modals */}
       <ExpenseModal
         isOpen={isExpenseModalOpen}
         onClose={() => {
           setIsExpenseModalOpen(false);
-          setExpenseModalInitialMode(undefined);
+          setExpenseToEdit(null);
         }}
         onSave={handleSaveExpense}
         expenseToEdit={expenseToEdit}
@@ -889,47 +438,11 @@ export default function App() {
             ? expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === expenseToEdit.id)?.taxRate ?? expenseToEdit.taxRate ?? 0
             : 0
         }
-        selectedMonth={selectedMonth}
-        initialMode={expenseModalInitialMode}
       />
-
-      <InflowModal
-        isOpen={isInflowModalOpen}
-        onClose={() => setIsInflowModalOpen(false)}
-        onSave={handleSaveInflow}
-        inflowToEdit={inflowToEdit}
-        selectedMonth={selectedMonth}
-      />
-
-      <BudgetModal
-        isOpen={isBudgetModalOpen}
-        onClose={() => setIsBudgetModalOpen(false)}
-        onSaveBudget={handleSaveBudget}
-        currentBudget={currentBudget}
-        selectedMonth={selectedMonth}
-      />
-
-      <DebtModal
-        isOpen={isDebtModalOpen}
-        onClose={() => setIsDebtModalOpen(false)}
-        onSave={handleSaveDebt}
-        debtToEdit={debtToEdit}
-      />
-
-      <RepaymentModal
-        isOpen={isRepaymentModalOpen}
-        onClose={() => setIsRepaymentModalOpen(false)}
-        onSaveRepayment={handleSaveRepayment}
-        debt={debtForRepayment}
-      />
-
       <ExportImportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         expenses={expenses}
-        inflows={inflows}
-        budgets={budgets}
-        debts={debts}
         onImportData={handleImportData}
       />
     </div>
