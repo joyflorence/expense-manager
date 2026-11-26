@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Expense, ExpenseCategory, PurposeType } from '../types';
 import { formatUGX } from '../utils/format';
-import { CalendarDays, FileCheck, Plus, Receipt, Search, Trash2, Pencil, Tags } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, FileCheck, Plus, Receipt, Search, Trash2, Pencil, Tags } from 'lucide-react';
 
 interface ExpenseViewProps {
   expenses: Expense[];
@@ -36,6 +36,8 @@ const isTaxOrFeeRecord = (expense: Expense) => (
   expense.isTaxEntry === true || expense.category === 'Taxes & Fees'
 );
 
+const RECORDS_PER_PAGE = 10;
+
 export const ExpenseView: React.FC<ExpenseViewProps> = ({
   expenses,
   onAddExpense,
@@ -48,6 +50,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [recordType, setRecordType] = useState<'expenses' | 'taxes'>('expenses');
+  const [recordPages, setRecordPages] = useState({ expenses: 1, taxes: 1 });
+
+  const resetCurrentPage = () => {
+    setRecordPages((pages) => ({ ...pages, [recordType]: 1 }));
+  };
 
   const expenseRecords = useMemo(() => expenses.filter((expense) => !isTaxOrFeeRecord(expense)), [expenses]);
   const taxRecords = useMemo(() => expenses.filter(isTaxOrFeeRecord), [expenses]);
@@ -73,6 +80,15 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       expense.categoryDetails?.reference,
     ].some((value) => value?.toLowerCase().includes(query));
   }), [visibleRecords, recordType, purposeFilter, categoryFilter, dateFilter, searchQuery]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredExpenses.length / RECORDS_PER_PAGE));
+  const currentPage = Math.min(recordPages[recordType], pageCount);
+  const firstRecordOnPage = filteredExpenses.length === 0 ? 0 : (currentPage - 1) * RECORDS_PER_PAGE + 1;
+  const lastRecordOnPage = Math.min(currentPage * RECORDS_PER_PAGE, filteredExpenses.length);
+  const paginatedExpenses = filteredExpenses.slice(
+    (currentPage - 1) * RECORDS_PER_PAGE,
+    currentPage * RECORDS_PER_PAGE
+  );
 
   const expenseCount = expenseRecords.length;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.totalAmount, 0);
@@ -188,7 +204,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               <h2 className="text-base font-semibold text-slate-950 dark:text-white">
                 {recordType === 'expenses' ? 'Expense records' : 'Tax & fee records'}
               </h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{filteredExpenses.length} records shown</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Showing {firstRecordOnPage}–{lastRecordOnPage} of {filteredExpenses.length} records
+              </p>
             </div>
             {recordType === 'expenses' && (
               <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
@@ -200,7 +218,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                   <button
                     key={filter.value}
                     type="button"
-                    onClick={() => setPurposeFilter(filter.value)}
+                    onClick={() => {
+                      setPurposeFilter(filter.value);
+                      resetCurrentPage();
+                    }}
                     aria-pressed={purposeFilter === filter.value}
                     className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
                       purposeFilter === filter.value
@@ -222,7 +243,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               <input
                 type="search"
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  resetCurrentPage();
+                }}
                 placeholder={recordType === 'expenses' ? 'Search expenses, payees or notes' : 'Search tax and fee records'}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
@@ -230,7 +254,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             {recordType === 'expenses' && (
               <label className="sm:col-span-1 lg:col-span-3">
                 <span className="sr-only">Filter by category</span>
-                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                <select value={categoryFilter} onChange={(event) => {
+                  setCategoryFilter(event.target.value);
+                  resetCurrentPage();
+                }} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                   <option value="all">All categories</option>
                   {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
                 </select>
@@ -238,7 +265,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             )}
             <label className="sm:col-span-1 lg:col-span-3">
               <span className="sr-only">Filter by date</span>
-              <input type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+              <input type="date" value={dateFilter} onChange={(event) => {
+                setDateFilter(event.target.value);
+                resetCurrentPage();
+              }} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
             </label>
           </div>
         </div>
@@ -274,7 +304,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60">
                   {recordType === 'expenses' ? (
                     <>
-                      <th className="px-4 py-3.5">Related expense</th>
+                      <th className="px-4 py-3.5">Expense</th>
                       <th className="px-4 py-3.5">Category</th>
                       <th className="px-4 py-3.5">Date &amp; payment</th>
                       <th className="px-4 py-3.5 text-right">Amount</th>
@@ -283,7 +313,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                   ) : (
                     <>
                       <th className="px-4 py-3.5">Tax or fee</th>
-                      <th className="px-4 py-3.5">Expense</th>
+                      <th className="px-4 py-3.5">Related expense</th>
                       <th className="px-4 py-3.5">Date &amp; payment</th>
                       <th className="px-4 py-3.5 text-right">Amount</th>
                     </>
@@ -292,7 +322,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
-                {filteredExpenses.map((expense) => (
+                {paginatedExpenses.map((expense) => (
                   <tr key={expense.id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                     <td className="px-4 py-4">
                       <div className="font-medium text-slate-950 dark:text-white">
@@ -357,7 +387,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               </tbody>
               <tfoot>
                 <tr className="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
-                  <td colSpan={3} className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">Total shown</td>
+                  <td colSpan={3} className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">Total filtered</td>
                   <td className="px-4 py-3 text-right font-mono text-sm font-semibold text-slate-950 dark:text-white">
                     {formatUGX(filteredExpenses.reduce((sum, expense) => sum + expense.totalAmount, 0))}
                   </td>
@@ -367,6 +397,31 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               </tfoot>
             </table>
           </div>
+        )}
+        {filteredExpenses.length > RECORDS_PER_PAGE && (
+          <nav aria-label={`${recordType === 'expenses' ? 'Expense' : 'Tax and fee'} record pages`} className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5">
+            <button
+              type="button"
+              onClick={() => setRecordPages((pages) => ({ ...pages, [recordType]: Math.max(1, currentPage - 1) }))}
+              disabled={currentPage === 1}
+              className="inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              Page <span className="font-semibold text-slate-800 dark:text-slate-200">{currentPage}</span> of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setRecordPages((pages) => ({ ...pages, [recordType]: Math.min(pageCount, currentPage + 1) }))}
+              disabled={currentPage === pageCount}
+              className="inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </nav>
         )}
       </section>
     </div>
