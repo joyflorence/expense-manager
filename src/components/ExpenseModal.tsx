@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AccountType, Expense, ExpenseCategory, PaymentMethod, PurposeType } from '../types';
+import { AccountType, Expense, ExpenseCategory, ExpenseCategoryDetails, InvestmentType, PaymentMethod, PurposeType } from '../types';
 import { X, Receipt } from 'lucide-react';
 
 interface ExpenseModalProps {
@@ -24,8 +24,22 @@ const CATEGORIES: ExpenseCategory[] = [
   'Health & Wellness',
   'Subscriptions',
   'Shopping & Personal',
+  'Savings',
+  'Investments',
+  'Debt Repayment',
+  'Savings & Investments',
   'Taxes & Fees',
   'Other',
+];
+
+const INVESTMENT_TYPES: InvestmentType[] = [
+  'Stocks or shares',
+  'Bonds or treasury bills',
+  'Managed or unit trust fund',
+  'Retirement contribution',
+  'Real estate',
+  'Business investment',
+  'Other investment',
 ];
 
 const PAYMENT_OPTIONS: Array<{ label: string; method: PaymentMethod; source: AccountType }> = [
@@ -71,6 +85,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
   const [isTaxDeductible, setIsTaxDeductible] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState<ExpenseCategoryDetails>({});
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,6 +103,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setVendor(expenseToEdit.vendor || '');
       setNotes(expenseToEdit.notes || '');
       setIsTaxDeductible(expenseToEdit.isTaxDeductible);
+      setCategoryDetails(expenseToEdit.categoryDetails || {});
       return;
     }
 
@@ -103,6 +119,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setVendor('');
     setNotes('');
     setIsTaxDeductible(false);
+    setCategoryDetails({});
   }, [isOpen, expenseToEdit, existingTaxAmount, existingTaxRate]);
 
   if (!isOpen) return null;
@@ -127,6 +144,23 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     event.preventDefault();
     if (!title.trim() || !Number.isFinite(amountValue) || amountValue <= 0 || !date) return;
 
+    const categoryDetailsForSave: ExpenseCategoryDetails | undefined = category === 'Savings'
+      ? {
+          savingsGoal: categoryDetails.savingsGoal?.trim() || undefined,
+          destination: categoryDetails.destination?.trim() || undefined,
+        }
+      : category === 'Investments'
+        ? {
+            investmentType: categoryDetails.investmentType,
+            provider: categoryDetails.provider?.trim() || undefined,
+          }
+        : category === 'Debt Repayment'
+          ? {
+              payee: categoryDetails.payee?.trim() || undefined,
+              reference: categoryDetails.reference?.trim() || undefined,
+            }
+          : undefined;
+
     onSave({
       title: title.trim(),
       amount: amountValue,
@@ -144,6 +178,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       isTaxEntry: false,
       vendor: vendor.trim() || undefined,
       notes: notes.trim() || undefined,
+      categoryDetails: categoryDetailsForSave,
     }, expenseToEdit?.id, taxValue, taxRate);
     onClose();
   };
@@ -215,6 +250,89 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </select>
             </div>
           </div>
+
+          {category === 'Savings' && (
+            <section className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40 sm:grid-cols-2">
+              <div>
+                <label htmlFor="expense-savings-goal" className={labelClassName}>Savings goal (optional)</label>
+                <input
+                  id="expense-savings-goal"
+                  value={categoryDetails.savingsGoal || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({ ...details, savingsGoal: event.target.value || undefined }))}
+                  className={fieldClassName}
+                  placeholder="e.g. Emergency fund"
+                />
+              </div>
+              <div>
+                <label htmlFor="expense-savings-destination" className={labelClassName}>Where saved (optional)</label>
+                <input
+                  id="expense-savings-destination"
+                  value={categoryDetails.destination || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({ ...details, destination: event.target.value || undefined }))}
+                  className={fieldClassName}
+                  placeholder="e.g. Savings account"
+                />
+              </div>
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400 sm:col-span-2">Recorded as money set aside, not as income or an account balance.</p>
+            </section>
+          )}
+
+          {category === 'Investments' && (
+            <section className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40 sm:grid-cols-2">
+              <div>
+                <label htmlFor="expense-investment-type" className={labelClassName}>Investment type</label>
+                <select
+                  id="expense-investment-type"
+                  value={categoryDetails.investmentType || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({
+                    ...details,
+                    investmentType: (event.target.value || undefined) as InvestmentType | undefined,
+                  }))}
+                  className={fieldClassName}
+                >
+                  <option value="">Select type (optional)</option>
+                  {INVESTMENT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="expense-investment-provider" className={labelClassName}>Provider or platform (optional)</label>
+                <input
+                  id="expense-investment-provider"
+                  value={categoryDetails.provider || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({ ...details, provider: event.target.value || undefined }))}
+                  className={fieldClassName}
+                  placeholder="Broker, fund or platform"
+                />
+              </div>
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400 sm:col-span-2">This records the amount contributed; it does not track investment value or returns.</p>
+            </section>
+          )}
+
+          {category === 'Debt Repayment' && (
+            <section className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40 sm:grid-cols-2">
+              <div>
+                <label htmlFor="expense-debt-payee" className={labelClassName}>Lender or payee (optional)</label>
+                <input
+                  id="expense-debt-payee"
+                  value={categoryDetails.payee || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({ ...details, payee: event.target.value || undefined }))}
+                  className={fieldClassName}
+                  placeholder="Person or institution repaid"
+                />
+              </div>
+              <div>
+                <label htmlFor="expense-debt-reference" className={labelClassName}>Loan reference (optional)</label>
+                <input
+                  id="expense-debt-reference"
+                  value={categoryDetails.reference || ''}
+                  onChange={(event) => setCategoryDetails((details) => ({ ...details, reference: event.target.value || undefined }))}
+                  className={fieldClassName}
+                  placeholder="Account or payment reference"
+                />
+              </div>
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400 sm:col-span-2">Use the amount paid for this repayment. Outstanding balances are not calculated.</p>
+            </section>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <fieldset>

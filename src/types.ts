@@ -60,6 +60,9 @@ export type ExpenseCategory =
   | 'Health & Wellness'
   | 'Subscriptions'
   | 'Shopping & Personal'
+  | 'Savings'
+  | 'Investments'
+  | 'Debt Repayment'
   | 'Savings & Investments'
   | 'Taxes & Fees'
   | 'Salary Inflow'
@@ -83,6 +86,24 @@ export type PaymentMethod =
   | 'Bank Transfer'
   | 'Cash'
   | 'Credit/Debit Card';
+
+export type InvestmentType =
+  | 'Stocks or shares'
+  | 'Bonds or treasury bills'
+  | 'Managed or unit trust fund'
+  | 'Retirement contribution'
+  | 'Real estate'
+  | 'Business investment'
+  | 'Other investment';
+
+export interface ExpenseCategoryDetails {
+  savingsGoal?: string;
+  destination?: string;
+  investmentType?: InvestmentType;
+  provider?: string;
+  payee?: string;
+  reference?: string;
+}
 
 export interface Expense {
   id: string;
@@ -111,6 +132,7 @@ export interface Expense {
   sourceAccount?: AccountType; // Account money leaves for an internal transfer
   destinationAccount?: AccountType; // Account money enters for an internal transfer
   referenceNumber?: string; // Bank / MoMo reference or transaction ID
+  categoryDetails?: ExpenseCategoryDetails;
   vendor?: string;
   notes?: string;
 }

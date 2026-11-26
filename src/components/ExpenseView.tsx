@@ -23,6 +23,10 @@ const CATEGORIES: ExpenseCategory[] = [
   'Health & Wellness',
   'Subscriptions',
   'Shopping & Personal',
+  'Savings',
+  'Investments',
+  'Debt Repayment',
+  'Savings & Investments',
   'Taxes & Fees',
   'Other',
 ];
@@ -37,10 +41,15 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [recordType, setRecordType] = useState<'expenses' | 'taxes'>('expenses');
 
-  const filteredExpenses = useMemo(() => expenses.filter((expense) => {
-    if (purposeFilter !== 'all' && expense.purpose !== purposeFilter) return false;
-    if (categoryFilter !== 'all' && expense.category !== categoryFilter) return false;
+  const expenseRecords = useMemo(() => expenses.filter((expense) => !expense.isTaxEntry), [expenses]);
+  const taxRecords = useMemo(() => expenses.filter((expense) => expense.isTaxEntry), [expenses]);
+  const visibleRecords = recordType === 'expenses' ? expenseRecords : taxRecords;
+
+  const filteredExpenses = useMemo(() => visibleRecords.filter((expense) => {
+    if (recordType === 'expenses' && purposeFilter !== 'all' && expense.purpose !== purposeFilter) return false;
+    if (recordType === 'expenses' && categoryFilter !== 'all' && expense.category !== categoryFilter) return false;
     if (dateFilter && expense.date !== dateFilter) return false;
     if (!searchQuery.trim()) return true;
 
@@ -50,8 +59,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       expense.vendor,
       expense.category,
       expense.notes,
+      expense.categoryDetails?.savingsGoal,
+      expense.categoryDetails?.destination,
+      expense.categoryDetails?.investmentType,
+      expense.categoryDetails?.provider,
+      expense.categoryDetails?.payee,
+      expense.categoryDetails?.reference,
     ].some((value) => value?.toLowerCase().includes(query));
-  }), [expenses, purposeFilter, categoryFilter, dateFilter, searchQuery]);
+  }), [visibleRecords, recordType, purposeFilter, categoryFilter, dateFilter, searchQuery]);
 
   const expenseCount = expenses.filter((expense) => !expense.isTaxEntry).length;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.totalAmount, 0);
@@ -67,6 +82,30 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const confirmDelete = (expense: Expense) => {
     const label = expense.isTaxEntry ? 'this tax or fee record' : 'this expense and its linked tax or fee';
     if (window.confirm(`Delete ${label}? This cannot be undone.`)) onDeleteExpense(expense.id);
+  };
+
+  const getCategoryDetailsLabel = (expense: Expense) => {
+    const details = expense.categoryDetails;
+    if (!details) return '';
+    if (expense.category === 'Savings') {
+      return [
+        details.savingsGoal && `Goal: ${details.savingsGoal}`,
+        details.destination && `Saved to: ${details.destination}`,
+      ].filter(Boolean).join(' · ');
+    }
+    if (expense.category === 'Investments') {
+      return [
+        details.investmentType,
+        details.provider && `Provider: ${details.provider}`,
+      ].filter(Boolean).join(' · ');
+    }
+    if (expense.category === 'Debt Repayment') {
+      return [
+        details.payee && `Paid to: ${details.payee}`,
+        details.reference && `Ref: ${details.reference}`,
+      ].filter(Boolean).join(' · ');
+    }
+    return '';
   };
 
   return (
@@ -113,55 +152,84 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         ))}
       </section>
 
+      <section aria-label="Expense and tax record sections" className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
+        {([
+          { id: 'expenses', label: 'Expenses', count: expenseRecords.length, icon: Receipt },
+          { id: 'taxes', label: 'Taxes & fees', count: taxRecords.length, icon: Tags },
+        ] as const).map(({ id, label, count, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setRecordType(id)}
+            aria-pressed={recordType === id}
+            className={`inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
+              recordType === id
+                ? 'border-emerald-700 text-emerald-800 dark:border-emerald-500 dark:text-emerald-300'
+                : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{count}</span>
+          </button>
+        ))}
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="space-y-4 border-b border-slate-200 p-4 dark:border-slate-800 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-950 dark:text-white">Expense records</h2>
+              <h2 className="text-base font-semibold text-slate-950 dark:text-white">
+                {recordType === 'expenses' ? 'Expense records' : 'Tax & fee records'}
+              </h2>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{filteredExpenses.length} records shown</p>
             </div>
-            <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
-              {([
-                { value: 'all', label: 'All' },
-                { value: 'personal', label: 'Personal' },
-                { value: 'work', label: 'Work' },
-              ] as const).map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  onClick={() => setPurposeFilter(filter.value)}
-                  aria-pressed={purposeFilter === filter.value}
-                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    purposeFilter === filter.value
-                      ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
+            {recordType === 'expenses' && (
+              <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                {([
+                  { value: 'all', label: 'All' },
+                  { value: 'personal', label: 'Personal' },
+                  { value: 'work', label: 'Work' },
+                ] as const).map((filter) => (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setPurposeFilter(filter.value)}
+                    aria-pressed={purposeFilter === filter.value}
+                    className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      purposeFilter === filter.value
+                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
-            <label className="relative sm:col-span-2 lg:col-span-6">
-              <span className="sr-only">Search expenses</span>
+          <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${recordType === 'expenses' ? 'lg:grid-cols-12' : 'lg:grid-cols-8'}`}>
+            <label className={`relative sm:col-span-2 ${recordType === 'expenses' ? 'lg:col-span-6' : 'lg:col-span-5'}`}>
+              <span className="sr-only">Search {recordType === 'expenses' ? 'expenses' : 'tax and fee records'}</span>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search expenses, payees or notes"
+                placeholder={recordType === 'expenses' ? 'Search expenses, payees or notes' : 'Search tax and fee records'}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="sm:col-span-1 lg:col-span-3">
-              <span className="sr-only">Filter by category</span>
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                <option value="all">All categories</option>
-                {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-              </select>
-            </label>
+            {recordType === 'expenses' && (
+              <label className="sm:col-span-1 lg:col-span-3">
+                <span className="sr-only">Filter by category</span>
+                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                  <option value="all">All categories</option>
+                  {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </label>
+            )}
             <label className="sm:col-span-1 lg:col-span-3">
               <span className="sr-only">Filter by date</span>
               <input type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
@@ -175,14 +243,18 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               <Receipt className="h-6 w-6" />
             </span>
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-              {expenses.length === 0 ? 'No expenses recorded yet' : 'No matching expenses'}
+              {visibleRecords.length === 0
+                ? recordType === 'expenses' ? 'No expenses recorded yet' : 'No tax or fee records yet'
+                : `No matching ${recordType === 'expenses' ? 'expenses' : 'tax or fee records'}`}
             </h3>
             <p className="mx-auto max-w-sm text-sm text-slate-500 dark:text-slate-400">
-              {expenses.length === 0
-                ? 'Record your first expense to start building a clear picture of your spending.'
+              {visibleRecords.length === 0
+                ? recordType === 'expenses'
+                  ? 'Record your first expense to start building a clear picture of your spending.'
+                  : 'Taxes and fees linked to expenses will appear here as separate records.'
                 : 'Try changing your search or filters.'}
             </p>
-            {expenses.length === 0 && (
+            {recordType === 'expenses' && expenseRecords.length === 0 && (
               <button type="button" onClick={onAddExpense} className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500">
                 <Plus className="h-4 w-4" />
                 Record expense
@@ -191,15 +263,25 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse text-left">
+            <table className={`w-full ${recordType === 'expenses' ? 'min-w-[760px]' : 'min-w-[680px]'} border-collapse text-left`}>
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60">
-                  <th className="px-4 py-3.5">Expense</th>
-                  <th className="px-4 py-3.5">Category</th>
-                  <th className="px-4 py-3.5">Date &amp; payment</th>
-                  <th className="px-4 py-3.5 text-right">Amount</th>
-                  <th className="px-4 py-3.5 text-right">Tax / fee</th>
-                  <th className="px-4 py-3.5 text-right">Total</th>
+                  {recordType === 'expenses' ? (
+                    <>
+                      <th className="px-4 py-3.5">Expense</th>
+                      <th className="px-4 py-3.5">Category</th>
+                      <th className="px-4 py-3.5">Date &amp; payment</th>
+                      <th className="px-4 py-3.5 text-right">Amount</th>
+                      <th className="px-4 py-3.5 text-right">Total</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-4 py-3.5">Tax or fee</th>
+                      <th className="px-4 py-3.5">Expense</th>
+                      <th className="px-4 py-3.5">Date &amp; payment</th>
+                      <th className="px-4 py-3.5 text-right">Amount</th>
+                    </>
+                  )}
                   <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -208,34 +290,42 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                   <tr key={expense.id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                     <td className="px-4 py-4">
                       <div className="font-medium text-slate-950 dark:text-white">
-                        {expense.isTaxEntry ? `Tax / fee · ${expense.title.replace(' - Tax / Fee', '')}` : expense.title}
+                        {recordType === 'taxes' ? `Tax / fee · ${expense.title.replace(' - Tax / Fee', '')}` : expense.title}
                       </div>
-                      {expense.vendor && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{expense.vendor}</div>}
-                      {expense.notes && <div className="mt-1 max-w-sm truncate text-xs text-slate-500 dark:text-slate-400">{expense.notes}</div>}
-                      {expense.isTaxDeductible && !expense.isTaxEntry && (
+                      {recordType === 'expenses' && expense.vendor && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{expense.vendor}</div>}
+                      {recordType === 'expenses' && getCategoryDetailsLabel(expense) && (
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{getCategoryDetailsLabel(expense)}</div>
+                      )}
+                      {recordType === 'expenses' && expense.notes && <div className="mt-1 max-w-sm truncate text-xs text-slate-500 dark:text-slate-400">{expense.notes}</div>}
+                      {recordType === 'expenses' && expense.isTaxDeductible && (
                         <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                           <FileCheck className="h-3.5 w-3.5" /> Tax-deductible
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        {expense.isTaxEntry ? 'Taxes & Fees' : expense.category}
-                      </span>
-                    </td>
+                    {recordType === 'taxes' ? (
+                      <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {expenses.find((parent) => parent.id === expense.parentExpenseId)?.title || expense.title.replace(' - Tax / Fee', '')}
+                      </td>
+                    ) : (
+                      <td className="px-4 py-4">
+                        <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {expense.category}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-xs text-slate-500 dark:text-slate-400">
                       <span className="block font-medium text-slate-700 dark:text-slate-300">{expense.date}</span>
                       <span className="mt-1 block">{expense.paymentMethod}</span>
-                      <span className="mt-1 block capitalize">{expense.purpose}</span>
+                      {recordType === 'expenses' && <span className="mt-1 block capitalize">{expense.purpose}</span>}
                     </td>
                     <td className="px-4 py-4 text-right font-mono text-xs font-medium text-slate-700 dark:text-slate-300">{formatUGX(expense.amount)}</td>
-                    <td className="px-4 py-4 text-right font-mono text-xs text-amber-700 dark:text-amber-300">
-                      {expense.isTaxEntry ? 'Separate record' : expense.taxAmount > 0 ? formatUGX(expense.taxAmount) : '—'}
-                    </td>
-                    <td className="px-4 py-4 text-right font-mono text-xs font-semibold text-slate-950 dark:text-white">{formatUGX(expense.totalAmount)}</td>
+                    {recordType === 'expenses' && (
+                      <td className="px-4 py-4 text-right font-mono text-xs font-semibold text-slate-950 dark:text-white">{formatUGX(expense.totalAmount)}</td>
+                    )}
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {!expense.isTaxEntry && (
+                        {recordType === 'expenses' && (
                           <button type="button" onClick={() => onEditExpense(expense)} aria-label={`Edit ${expense.title}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -250,10 +340,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               </tbody>
               <tfoot>
                 <tr className="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
-                  <td colSpan={5} className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">Total shown</td>
+                  <td colSpan={3} className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">Total shown</td>
                   <td className="px-4 py-3 text-right font-mono text-sm font-semibold text-slate-950 dark:text-white">
                     {formatUGX(filteredExpenses.reduce((sum, expense) => sum + expense.totalAmount, 0))}
                   </td>
+                  {recordType === 'expenses' && <td />}
                   <td />
                 </tr>
               </tfoot>
