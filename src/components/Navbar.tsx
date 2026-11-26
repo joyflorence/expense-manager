@@ -94,9 +94,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button type="button" onClick={onToggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} className="hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white sm:flex">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-            <button type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-stone-200 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white">
-              <UserRound className="h-4 w-4" />
-            </button>
+            <details className="group relative">
+              <summary
+                aria-label="Account options"
+                title="Account options"
+                className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg text-slate-500 transition hover:bg-stone-200 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 [&::-webkit-details-marker]:hidden dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <UserRound className="h-4 w-4" />
+              </summary>
+              <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-stone-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-emerald-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                >
+                  Sign out
+                </button>
+              </div>
+            </details>
           </div>
         </div>
 

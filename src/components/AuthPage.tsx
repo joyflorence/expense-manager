@@ -4,7 +4,7 @@ import { supabase, authConfigError } from '../auth';
 
 function ExpenseIllustration() {
   return (
-    <div className="relative mx-auto w-full max-w-md" aria-label="Expense tracking dashboard illustration" role="img">
+    <div className="relative mx-auto w-full max-w-[min(26rem,40vh)]" aria-label="Expense tracking dashboard illustration" role="img">
       <div className="absolute -left-8 top-12 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
       <div className="absolute -right-4 bottom-8 h-40 w-40 rounded-full bg-teal-300/20 blur-3xl" />
       <div className="relative rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-3 shadow-2xl shadow-emerald-950/30 backdrop-blur-sm sm:p-4">
@@ -115,7 +115,7 @@ export function AuthPage() {
 
   return (
     <main className="min-h-svh bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 lg:grid lg:h-svh lg:min-h-0 lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden">
-      <section className="relative hidden min-h-0 overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 px-8 py-6 text-white lg:flex lg:flex-col lg:justify-between xl:px-12">
+      <section className="relative hidden min-h-0 overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 px-8 py-4 text-white lg:flex lg:flex-col lg:justify-between xl:px-12 xl:py-5">
         <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
           <div className="absolute -left-28 top-24 h-80 w-80 rounded-full border border-emerald-300/30" />
           <div className="absolute -left-12 top-40 h-64 w-64 rounded-full border border-emerald-300/20" />
@@ -132,8 +132,8 @@ export function AuthPage() {
           </span>
         </a>
 
-        <div className="relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-5 py-5 xl:gap-6">
-          <div className="space-y-3">
+        <div className="relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-3 py-3 xl:gap-4">
+          <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Personal expense tracking</p>
             <h1 className="max-w-lg text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
               Know where your money goes.
