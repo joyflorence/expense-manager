@@ -4,23 +4,23 @@ import { supabase, authConfigError } from '../auth';
 
 function ExpenseIllustration() {
   return (
-    <div className="relative mx-auto w-full max-w-[min(26rem,40vh)]" aria-label="Expense tracking dashboard illustration" role="img">
+    <div className="relative mx-auto w-full max-w-[min(26rem,42vh)]" aria-label="Expense tracking dashboard illustration" role="img">
       <div className="absolute -left-8 top-12 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
       <div className="absolute -right-4 bottom-8 h-40 w-40 rounded-full bg-teal-300/20 blur-3xl" />
-      <div className="relative rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-3 shadow-2xl shadow-emerald-950/30 backdrop-blur-sm sm:p-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-slate-900 shadow-xl sm:p-5">
+      <div className="relative rounded-[1.4rem] border border-white/15 bg-white/[0.08] p-[clamp(0.3rem,1.1vh,1rem)] shadow-2xl shadow-emerald-950/30 backdrop-blur-sm">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-[clamp(0.5rem,1.5vh,1.25rem)] text-slate-900 shadow-xl sm:rounded-2xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-slate-500">Spending overview</p>
-              <p className="mt-1 text-xl font-semibold tracking-tight">UGX 842,500</p>
-              <p className="mt-1 text-xs text-slate-500">Expenses this month</p>
+              <p className="text-[clamp(0.45rem,1.2vh,0.75rem)] font-medium text-slate-500">Spending overview</p>
+              <p className="mt-0.5 text-[clamp(0.58rem,2vh,1.25rem)] font-semibold tracking-tight">UGX 842,500</p>
+              <p className="mt-0.5 text-[clamp(0.45rem,1.2vh,0.75rem)] text-slate-500">Expenses this month</p>
             </div>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <Receipt className="h-5 w-5" />
+            <span className="flex h-[clamp(1.25rem,4vh,2.5rem)] w-[clamp(1.25rem,4vh,2.5rem)] items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+              <Receipt className="h-1/2 w-1/2" />
             </span>
           </div>
 
-          <svg viewBox="0 0 420 150" className="mt-3 h-auto w-full" aria-hidden="true">
+          <svg viewBox="0 0 420 150" className="mt-[clamp(0.25rem,1.2vh,0.75rem)] h-auto w-full" aria-hidden="true">
             <defs>
               <linearGradient id="spending-area" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#10b981" stopOpacity=".22" />
@@ -36,31 +36,31 @@ function ExpenseIllustration() {
             <circle cx="408" cy="24" r="5" fill="#059669" stroke="white" strokeWidth="3" />
           </svg>
 
-          <div className="mt-2 space-y-2">
+          <div className="mt-1 space-y-[clamp(0.15rem,0.6vh,0.5rem)]">
             {[
               { label: 'Groceries', detail: 'Today · Personal', amount: 'UGX 48,000', icon: 'G', color: 'bg-amber-100 text-amber-700' },
               { label: 'Transport', detail: 'Yesterday · Personal', amount: 'UGX 22,500', icon: 'T', color: 'bg-sky-100 text-sky-700' },
             ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${item.color}`}>{item.icon}</span>
+              <div key={item.label} className="flex items-center justify-between gap-1 border-t border-slate-100 pt-1.5">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className={`flex h-[clamp(1rem,3.5vh,2rem)] w-[clamp(1rem,3.5vh,2rem)] shrink-0 items-center justify-center rounded-lg text-[clamp(0.45rem,1.4vh,0.875rem)] font-semibold ${item.color}`}>{item.icon}</span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">{item.detail}</span>
+                    <span className="block truncate text-[clamp(0.48rem,1.5vh,0.875rem)] font-semibold">{item.label}</span>
+                    <span className="block truncate text-[clamp(0.4rem,1.2vh,0.75rem)] text-slate-500">{item.detail}</span>
                   </span>
                 </div>
-                <span className="whitespace-nowrap text-sm font-semibold">{item.amount}</span>
+                <span className="whitespace-nowrap text-[clamp(0.42rem,1.25vh,0.875rem)] font-semibold">{item.amount}</span>
               </div>
             ))}
           </div>
         </div>
-        <div className="absolute -bottom-4 -left-1 flex items-center gap-2 rounded-2xl border border-white/70 bg-white px-3 py-2 text-slate-900 shadow-xl sm:-left-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <Check className="h-5 w-5" />
+        <div className="absolute -bottom-3 -left-1 flex items-center gap-1.5 rounded-xl border border-white/70 bg-white px-2 py-1.5 text-slate-900 shadow-xl sm:-left-4">
+          <span className="flex h-[clamp(1rem,3.5vh,2rem)] w-[clamp(1rem,3.5vh,2rem)] items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+            <Check className="h-3/5 w-3/5" />
           </span>
           <span>
-            <span className="block text-xs font-semibold">Every expense, in one place</span>
-            <span className="mt-0.5 block text-[11px] text-slate-500">Simple records. Clear spending.</span>
+            <span className="block text-[clamp(0.45rem,1.3vh,0.75rem)] font-semibold">Every expense, in one place</span>
+            <span className="block text-[clamp(0.4rem,1.1vh,0.6875rem)] text-slate-500">Simple records. Clear spending.</span>
           </span>
         </div>
       </div>
