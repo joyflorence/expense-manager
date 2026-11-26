@@ -31,6 +31,10 @@ const CATEGORIES: ExpenseCategory[] = [
   'Other',
 ];
 
+const isTaxOrFeeRecord = (expense: Expense) => (
+  expense.isTaxEntry === true || expense.category === 'Taxes & Fees'
+);
+
 export const ExpenseView: React.FC<ExpenseViewProps> = ({
   expenses,
   onAddExpense,
@@ -43,8 +47,8 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [dateFilter, setDateFilter] = useState('');
   const [recordType, setRecordType] = useState<'expenses' | 'taxes'>('expenses');
 
-  const expenseRecords = useMemo(() => expenses.filter((expense) => !expense.isTaxEntry), [expenses]);
-  const taxRecords = useMemo(() => expenses.filter((expense) => expense.isTaxEntry), [expenses]);
+  const expenseRecords = useMemo(() => expenses.filter((expense) => !isTaxOrFeeRecord(expense)), [expenses]);
+  const taxRecords = useMemo(() => expenses.filter(isTaxOrFeeRecord), [expenses]);
   const visibleRecords = recordType === 'expenses' ? expenseRecords : taxRecords;
 
   const filteredExpenses = useMemo(() => visibleRecords.filter((expense) => {
@@ -68,19 +72,19 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     ].some((value) => value?.toLowerCase().includes(query));
   }), [visibleRecords, recordType, purposeFilter, categoryFilter, dateFilter, searchQuery]);
 
-  const expenseCount = expenses.filter((expense) => !expense.isTaxEntry).length;
+  const expenseCount = expenseRecords.length;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.totalAmount, 0);
   const parentsWithSeparateTax = new Set(
-    expenses.filter((expense) => expense.isTaxEntry && expense.parentExpenseId).map((expense) => expense.parentExpenseId)
+    taxRecords.filter((expense) => expense.parentExpenseId).map((expense) => expense.parentExpenseId)
   );
-  const totalTaxAndFees = expenses.reduce((sum, expense) => {
-    if (expense.isTaxEntry) return sum + expense.amount;
-    if (parentsWithSeparateTax.has(expense.id)) return sum;
-    return sum + (expense.taxAmount || 0);
-  }, 0);
+  const totalTaxAndFees = taxRecords.reduce((sum, expense) => sum + expense.totalAmount, 0) +
+    expenseRecords.reduce((sum, expense) => {
+      if (parentsWithSeparateTax.has(expense.id)) return sum;
+      return sum + (expense.taxAmount || 0);
+    }, 0);
 
   const confirmDelete = (expense: Expense) => {
-    const label = expense.isTaxEntry ? 'this tax or fee record' : 'this expense and its linked tax or fee';
+    const label = isTaxOrFeeRecord(expense) ? 'this tax or fee record' : 'this expense and its linked tax or fee';
     if (window.confirm(`Delete ${label}? This cannot be undone.`)) onDeleteExpense(expense.id);
   };
 

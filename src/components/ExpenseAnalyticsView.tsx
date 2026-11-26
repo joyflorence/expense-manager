@@ -23,22 +23,32 @@ const formatMonth = (month: string) => {
 
 const CHART_GREEN = '#477a62';
 
+const isTaxOrFeeRecord = (expense: Expense) => (
+  expense.isTaxEntry === true || expense.category === 'Taxes & Fees'
+);
+
 export const ExpenseAnalyticsView: React.FC<ExpenseAnalyticsViewProps> = ({ expenses, allExpenses, comparisonMonth }) => {
-  const expenseRecords = useMemo(() => expenses.filter((expense) => !expense.isTaxEntry), [expenses]);
+  const expenseRecords = useMemo(() => expenses.filter((expense) => !isTaxOrFeeRecord(expense)), [expenses]);
   const totalOutflow = useMemo(
     () => expenses.reduce((sum, expense) => sum + expense.totalAmount, 0),
     [expenses]
   );
+  const expenseOutflow = useMemo(
+    () => expenseRecords.reduce((sum, expense) => sum + expense.totalAmount, 0),
+    [expenseRecords]
+  );
   const totalTaxAndFees = useMemo(() => {
     const parentsWithSeparateTax = new Set(
-      expenses.filter((expense) => expense.isTaxEntry && expense.parentExpenseId).map((expense) => expense.parentExpenseId)
+      expenses.filter((expense) => isTaxOrFeeRecord(expense) && expense.parentExpenseId).map((expense) => expense.parentExpenseId)
     );
-    return expenses.reduce((sum, expense) => {
-      if (expense.isTaxEntry) return sum + expense.amount;
+    const taxRecords = expenses.filter(isTaxOrFeeRecord);
+    const separateTaxTotal = taxRecords.reduce((sum, expense) => sum + expense.totalAmount, 0);
+    const embeddedTaxTotal = expenseRecords.reduce((sum, expense) => {
       if (parentsWithSeparateTax.has(expense.id)) return sum;
       return sum + (expense.taxAmount || 0);
     }, 0);
-  }, [expenses]);
+    return separateTaxTotal + embeddedTaxTotal;
+  }, [expenses, expenseRecords]);
 
   const categoryData = useMemo(() => {
     const totals = new Map<string, number>();
@@ -57,6 +67,7 @@ export const ExpenseAnalyticsView: React.FC<ExpenseAnalyticsViewProps> = ({ expe
     });
     const monthlyTotals = new Map(months.map((month) => [month, 0]));
     for (const expense of allExpenses) {
+      if (isTaxOrFeeRecord(expense)) continue;
       const month = expense.date.slice(0, 7);
       if (!monthlyTotals.has(month)) continue;
       monthlyTotals.set(month, (monthlyTotals.get(month) || 0) + expense.totalAmount);
@@ -69,7 +80,7 @@ export const ExpenseAnalyticsView: React.FC<ExpenseAnalyticsViewProps> = ({ expe
 
   const topCategory = categoryData[0];
   const maxCategoryValue = topCategory?.value || 1;
-  const averageSpend = expenseRecords.length ? totalOutflow / expenseRecords.length : 0;
+  const averageSpend = expenseRecords.length ? expenseOutflow / expenseRecords.length : 0;
   const monthComparison = useMemo(() => {
     if (!comparisonMonth) return null;
     const [year, month] = comparisonMonth.split('-').map(Number);
@@ -81,10 +92,10 @@ export const ExpenseAnalyticsView: React.FC<ExpenseAnalyticsViewProps> = ({ expe
     const periodEnd = String(periodEndDay).padStart(2, '0');
     const previousPeriodEnd = String(previousMonthEndDay).padStart(2, '0');
     const previousTotal = allExpenses
-      .filter((expense) => expense.date >= `${previousMonth}-01` && expense.date <= `${previousMonth}-${previousPeriodEnd}`)
+    .filter((expense) => !isTaxOrFeeRecord(expense) && expense.date >= `${previousMonth}-01` && expense.date <= `${previousMonth}-${previousPeriodEnd}`)
       .reduce((sum, expense) => sum + expense.totalAmount, 0);
     const currentTotal = allExpenses
-      .filter((expense) => expense.date >= `${comparisonMonth}-01` && expense.date <= `${comparisonMonth}-${periodEnd}`)
+    .filter((expense) => !isTaxOrFeeRecord(expense) && expense.date >= `${comparisonMonth}-01` && expense.date <= `${comparisonMonth}-${periodEnd}`)
       .reduce((sum, expense) => sum + expense.totalAmount, 0);
     const difference = currentTotal - previousTotal;
     const percentage = previousTotal > 0 ? (difference / previousTotal) * 100 : null;
