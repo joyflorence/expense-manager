@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Expense, PaymentMethod, DateFilterState } from './types';
 import { Navbar } from './components/Navbar';
 import { ExpenseView } from './components/ExpenseView';
+import { ExpenseAnalyticsView } from './components/ExpenseAnalyticsView';
 import { ExpenseModal } from './components/ExpenseModal';
 import { ExportImportModal } from './components/ExportImportModal';
 import { deleteExpense, loadExpenses, saveExpense } from './api';
@@ -47,6 +48,7 @@ export default function App() {
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'expenses' | 'analytics'>('expenses');
 
   useEffect(() => {
     localStorage.setItem('omnitrack_theme', theme);
@@ -369,15 +371,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-[#f7f7f2] text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
       <Navbar
+        currentView={currentView}
+        onViewChange={setCurrentView}
         dateFilter={dateFilter}
         onDateFilterChange={handleDateFilterChange}
         availableMonths={availableMonths}
-        onOpenExpenseModal={() => {
-          setExpenseToEdit(null);
-          setIsExpenseModalOpen(true);
-        }}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onClearData={handleClearData}
         onRefresh={() => void handleRefresh()}
@@ -393,15 +393,23 @@ export default function App() {
             <button type="button" onClick={() => void handleRefresh()} className="font-semibold underline">Retry</button>
           </div>
         )}
-        <ExpenseView
-          expenses={filteredExpenses}
-          onAddExpense={() => {
-            setExpenseToEdit(null);
-            setIsExpenseModalOpen(true);
-          }}
-          onEditExpense={handleEditExpense}
-          onDeleteExpense={handleDeleteExpense}
-        />
+        {currentView === 'expenses' ? (
+          <ExpenseView
+            expenses={filteredExpenses}
+            onAddExpense={() => {
+              setExpenseToEdit(null);
+              setIsExpenseModalOpen(true);
+            }}
+            onEditExpense={handleEditExpense}
+            onDeleteExpense={handleDeleteExpense}
+          />
+        ) : (
+          <ExpenseAnalyticsView
+            expenses={filteredExpenses}
+            allExpenses={expenses}
+            comparisonMonth={dateFilter.mode === 'month' ? dateFilter.selectedMonth : undefined}
+          />
+        )}
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-2 text-xs text-slate-500 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-400">

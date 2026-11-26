@@ -43,6 +43,14 @@ const TAX_PRESETS = [
   { label: '18%', rate: 18 },
 ];
 
+const getLocalDate = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   isOpen,
   onClose,
@@ -59,7 +67,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [category, setCategory] = useState<ExpenseCategory>('Other');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [deductionSource, setDeductionSource] = useState<AccountType>('cash_on_hand');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(getLocalDate);
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
   const [isTaxDeductible, setIsTaxDeductible] = useState(false);
@@ -91,7 +99,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setCategory('Other');
     setPaymentMethod('Cash');
     setDeductionSource('cash_on_hand');
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(getLocalDate());
     setVendor('');
     setNotes('');
     setIsTaxDeductible(false);

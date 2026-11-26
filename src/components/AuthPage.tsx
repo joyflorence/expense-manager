@@ -4,15 +4,15 @@ import { supabase, authConfigError } from '../auth';
 
 function ExpenseIllustration() {
   return (
-    <div className="relative mx-auto w-full max-w-lg" aria-label="Expense tracking dashboard illustration" role="img">
+    <div className="relative mx-auto w-full max-w-md" aria-label="Expense tracking dashboard illustration" role="img">
       <div className="absolute -left-8 top-12 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
       <div className="absolute -right-4 bottom-8 h-40 w-40 rounded-full bg-teal-300/20 blur-3xl" />
-      <div className="relative rounded-[2rem] border border-white/15 bg-white/[0.08] p-4 shadow-2xl shadow-emerald-950/30 backdrop-blur-sm sm:p-6">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 text-slate-900 shadow-xl sm:p-6">
+      <div className="relative rounded-[1.75rem] border border-white/15 bg-white/[0.08] p-3 shadow-2xl shadow-emerald-950/30 backdrop-blur-sm sm:p-4">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 text-slate-900 shadow-xl sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-medium text-slate-500">Spending overview</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight">UGX 842,500</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight">UGX 842,500</p>
               <p className="mt-1 text-xs text-slate-500">Expenses this month</p>
             </div>
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
@@ -20,7 +20,7 @@ function ExpenseIllustration() {
             </span>
           </div>
 
-          <svg viewBox="0 0 420 150" className="mt-6 h-auto w-full" aria-hidden="true">
+          <svg viewBox="0 0 420 150" className="mt-3 h-auto w-full" aria-hidden="true">
             <defs>
               <linearGradient id="spending-area" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#10b981" stopOpacity=".22" />
@@ -36,14 +36,14 @@ function ExpenseIllustration() {
             <circle cx="408" cy="24" r="5" fill="#059669" stroke="white" strokeWidth="3" />
           </svg>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-2 space-y-2">
             {[
               { label: 'Groceries', detail: 'Today · Personal', amount: 'UGX 48,000', icon: 'G', color: 'bg-amber-100 text-amber-700' },
               { label: 'Transport', detail: 'Yesterday · Personal', amount: 'UGX 22,500', icon: 'T', color: 'bg-sky-100 text-sky-700' },
             ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+              <div key={item.label} className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${item.color}`}>{item.icon}</span>
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${item.color}`}>{item.icon}</span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold">{item.label}</span>
                     <span className="mt-0.5 block text-xs text-slate-500">{item.detail}</span>
@@ -54,8 +54,8 @@ function ExpenseIllustration() {
             ))}
           </div>
         </div>
-        <div className="absolute -bottom-5 -left-2 flex items-center gap-3 rounded-2xl border border-white/70 bg-white px-4 py-3 text-slate-900 shadow-xl sm:-left-7">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+        <div className="absolute -bottom-4 -left-1 flex items-center gap-2 rounded-2xl border border-white/70 bg-white px-3 py-2 text-slate-900 shadow-xl sm:-left-5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
             <Check className="h-5 w-5" />
           </span>
           <span>
@@ -111,11 +111,11 @@ export function AuthPage() {
     }
   };
 
-  const inputClassName = 'w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white';
+  const inputClassName = 'w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white lg:py-2.5';
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 lg:grid lg:grid-cols-[1.05fr_0.95fr]">
-      <section className="relative hidden min-h-screen overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
+    <main className="min-h-svh bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 lg:grid lg:h-svh lg:min-h-0 lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden">
+      <section className="relative hidden min-h-0 overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 px-8 py-6 text-white lg:flex lg:flex-col lg:justify-between xl:px-12">
         <div className="pointer-events-none absolute inset-0 opacity-20" aria-hidden="true">
           <div className="absolute -left-28 top-24 h-80 w-80 rounded-full border border-emerald-300/30" />
           <div className="absolute -left-12 top-40 h-64 w-64 rounded-full border border-emerald-300/20" />
@@ -132,13 +132,13 @@ export function AuthPage() {
           </span>
         </a>
 
-        <div className="relative z-10 mx-auto w-full max-w-xl space-y-10 py-10">
-          <div className="space-y-4">
+        <div className="relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-5 py-5 xl:gap-6">
+          <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Personal expense tracking</p>
-            <h1 className="max-w-lg text-4xl font-semibold leading-tight tracking-tight xl:text-5xl">
+            <h1 className="max-w-lg text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
               Know where your money goes.
             </h1>
-            <p className="max-w-md text-base leading-7 text-emerald-50/75">
+            <p className="max-w-md text-sm leading-6 text-emerald-50/75 xl:text-base">
               Keep your day-to-day expenses organized, searchable and easy to understand.
             </p>
           </div>
@@ -148,28 +148,28 @@ export function AuthPage() {
         <p className="relative z-10 text-xs text-emerald-100/50">Your personal workspace for expense records.</p>
       </section>
 
-      <section className="flex min-h-screen flex-col px-5 py-6 sm:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
-          <a href="/" className="mb-10 inline-flex items-center gap-3 lg:hidden">
+      <section className="flex min-h-svh flex-col px-5 py-6 sm:px-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:px-10 lg:py-4 xl:px-12">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-4 lg:py-2">
+          <a href="/" className="mb-6 inline-flex items-center gap-3 lg:hidden">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 text-white dark:bg-emerald-600">
               <Receipt className="h-5 w-5" />
             </span>
             <span className="text-sm font-semibold">Expense Manager</span>
           </a>
 
-          <div className="mb-8">
-            <p className="mb-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">Welcome to Expense Manager</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+          <div className="mb-5">
+            <p className="mb-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">Welcome to Expense Manager</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
               {mode === 'sign-in' ? 'Sign in to your account' : 'Create your account'}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-sm leading-5 text-slate-500 dark:text-slate-400">
               {mode === 'sign-in'
                 ? 'Access your expense records and spending history.'
                 : 'Set up a private workspace for tracking expenses.'}
             </p>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <div className="mb-4 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
             {(['sign-in', 'sign-up'] as const).map((item) => (
               <button
                 key={item}
@@ -186,11 +186,11 @@ export function AuthPage() {
             ))}
           </div>
 
-          <form onSubmit={submit} className="space-y-5">
+          <form onSubmit={submit} className="space-y-3.5">
             {mode === 'sign-up' && (
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Name
-                <span className="relative mt-2 block">
+                <span className="relative mt-2 block lg:mt-1.5">
                   <UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={inputClassName} placeholder="Your name" />
                 </span>
@@ -199,7 +199,7 @@ export function AuthPage() {
 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               Email address
-              <span className="relative mt-2 block">
+              <span className="relative mt-2 block lg:mt-1.5">
                 <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClassName} placeholder="you@example.com" />
               </span>
@@ -207,7 +207,7 @@ export function AuthPage() {
 
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               Password
-              <span className="relative mt-2 block">
+              <span className="relative mt-2 block lg:mt-1.5">
                 <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   required
@@ -238,14 +238,14 @@ export function AuthPage() {
 
             <button
               disabled={isSubmitting}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500 lg:min-h-11"
             >
               {isSubmitting ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}
               {!isSubmitting && <ArrowRight className="h-4 w-4" />}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs leading-5 text-slate-400">
+          <p className="mt-5 text-center text-xs leading-5 text-slate-400">
             Your expense records are private to your account.
           </p>
         </div>

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { CalendarDays, Download, Moon, Plus, Receipt, RefreshCw, Sun, Trash2 } from 'lucide-react';
+import { BarChart3, CalendarDays, Download, Moon, Receipt, RefreshCw, Sun, Trash2, UserRound } from 'lucide-react';
 import { DateFilterMode, DateFilterState } from '../types';
 
-export type ViewTab = 'overview' | 'expenses' | 'debts' | 'analytics';
+export type ViewTab = 'expenses' | 'analytics';
 
 interface NavbarProps {
+  currentView: ViewTab;
+  onViewChange: (view: ViewTab) => void;
   dateFilter: DateFilterState;
   onDateFilterChange: (filter: DateFilterState) => void;
   availableMonths: string[];
-  onOpenExpenseModal: () => void;
   onOpenExportModal: () => void;
   onClearData: () => void;
   onRefresh: () => void;
@@ -18,10 +19,11 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  currentView,
+  onViewChange,
   dateFilter,
   onDateFilterChange,
   availableMonths,
-  onOpenExpenseModal,
   onOpenExportModal,
   onClearData,
   onRefresh,
@@ -44,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 text-slate-900 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100">
+    <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 text-slate-900 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-16 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -56,6 +58,28 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="mt-0.5 hidden text-xs text-slate-500 dark:text-slate-400 sm:block">Personal expense tracker</span>
             </span>
           </div>
+
+          <nav aria-label="Main navigation" className="hidden items-center gap-1 rounded-xl bg-stone-200/70 p-1 dark:bg-slate-800 sm:flex">
+            {([
+              { id: 'expenses', label: 'Expenses', icon: Receipt },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onViewChange(id)}
+                aria-current={currentView === id ? 'page' : undefined}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  currentView === id
+                    ? 'bg-white text-emerald-900 shadow-sm dark:bg-slate-700 dark:text-emerald-200'
+                    : 'text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </nav>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <button type="button" onClick={refresh} aria-label="Refresh expenses" title="Refresh expenses" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">
@@ -70,18 +94,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button type="button" onClick={onToggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} className="hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white sm:flex">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-            <button type="button" onClick={onSignOut} className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white sm:inline-flex">
-              Sign out
-            </button>
-            <button type="button" onClick={onOpenExpenseModal} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-emerald-700 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Record expense</span>
-              <span className="sm:hidden">Record</span>
+            <button type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-stone-200 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white">
+              <UserRound className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 py-2.5 dark:border-slate-800 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 border-t border-stone-200 py-2.5 dark:border-slate-800 sm:gap-3">
+          <nav aria-label="Main navigation" className="mr-1 flex items-center gap-1 rounded-xl bg-stone-200/70 p-1 sm:hidden dark:bg-slate-800">
+            {([
+              { id: 'expenses', label: 'Expenses', icon: Receipt },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onViewChange(id)}
+                aria-current={currentView === id ? 'page' : undefined}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition ${
+                  currentView === id
+                    ? 'bg-white text-emerald-900 shadow-sm dark:bg-slate-700 dark:text-emerald-200'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </nav>
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
             <CalendarDays className="h-4 w-4" />
             Period

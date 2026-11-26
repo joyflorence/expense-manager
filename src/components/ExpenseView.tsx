@@ -55,13 +55,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
   const expenseCount = expenses.filter((expense) => !expense.isTaxEntry).length;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.totalAmount, 0);
-  const totalTaxAndFees = expenses.reduce((sum, expense) => (
-    sum + (expense.isTaxEntry ? expense.amount : expense.taxAmount || 0)
-  ), 0);
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthExpenses = expenses.reduce((sum, expense) => (
-    sum + (expense.date.slice(0, 7) === currentMonth && !expense.isTaxEntry ? expense.amount : 0)
-  ), 0);
+  const parentsWithSeparateTax = new Set(
+    expenses.filter((expense) => expense.isTaxEntry && expense.parentExpenseId).map((expense) => expense.parentExpenseId)
+  );
+  const totalTaxAndFees = expenses.reduce((sum, expense) => {
+    if (expense.isTaxEntry) return sum + expense.amount;
+    if (parentsWithSeparateTax.has(expense.id)) return sum;
+    return sum + (expense.taxAmount || 0);
+  }, 0);
 
   const confirmDelete = (expense: Expense) => {
     const label = expense.isTaxEntry ? 'this tax or fee record' : 'this expense and its linked tax or fee';
@@ -95,8 +96,8 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
       <section aria-label="Expense summary" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
-          { label: 'Total expenses', value: formatUGX(totalExpenses), caption: `${expenseCount} ${expenseCount === 1 ? 'expense' : 'expenses'}`, icon: Receipt, color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' },
-          { label: 'This month', value: formatUGX(monthExpenses), caption: 'Expense amount this month', icon: CalendarDays, color: 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300' },
+          { label: 'Total outflow', value: formatUGX(totalExpenses), caption: 'Expenses including separate fees', icon: Receipt, color: 'bg-[#e7efe8] text-[#426b52] dark:bg-emerald-950/60 dark:text-emerald-300' },
+          { label: 'Expenses recorded', value: expenseCount.toLocaleString(), caption: 'In the selected period', icon: CalendarDays, color: 'bg-[#e6edf0] text-[#55717b] dark:bg-sky-950/50 dark:text-sky-300' },
           { label: 'Taxes & fees', value: formatUGX(totalTaxAndFees), caption: 'Tracked separately', icon: Tags, color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' },
         ].map(({ label, value, caption, icon: Icon, color }) => (
           <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
