@@ -61,6 +61,7 @@ export type ExpenseCategory =
   | 'Subscriptions'
   | 'Shopping & Personal'
   | 'Savings & Investments'
+  | 'Taxes & Fees'
   | 'Salary Inflow'
   | 'Cashout Inflow'
   | 'Other';
@@ -86,10 +87,10 @@ export type PaymentMethod =
 export interface Expense {
   id: string;
   title: string;
-  amount: number; // Subtotal before tax
-  taxAmount: number; // Tax / Transfer Fee amount in currency
-  taxRate?: number; // Tax percentage (e.g. 0.5% or 0)
-  totalAmount: number; // total = amount + taxAmount
+  amount: number; // Expense amount, or tax/fee amount for a standalone tax entry
+  taxAmount: number; // Legacy embedded tax/fee value; new records use a separate entry
+  taxRate?: number; // Tax percentage for legacy embedded values or standalone tax entries
+  totalAmount: number; // Total for this record
   purpose: PurposeType;
   category: ExpenseCategory;
   paymentMethod: PaymentMethod;
@@ -105,6 +106,8 @@ export interface Expense {
   recipientMobileNetwork?: string; // e.g. MTN Mobile Money, Airtel Money
   recipientPhone?: string; // Phone number or MoMo account
   transferFee?: number; // Bank transfer transaction charge
+  isTaxEntry?: boolean; // True when this is a standalone tax or fee record
+  parentExpenseId?: string; // Expense this tax or fee was incurred on
   sourceAccount?: AccountType; // Account money leaves for an internal transfer
   destinationAccount?: AccountType; // Account money enters for an internal transfer
   referenceNumber?: string; // Bank / MoMo reference or transaction ID

@@ -347,31 +347,103 @@ export default function App() {
   };
 
   // Expense handlers
-  const handleSaveExpense = (expenseData: Omit<Expense, 'id'>, editingId?: string) => {
-    if (!isPositiveAmount(expenseData.amount) || expenseData.taxAmount < 0 || expenseData.totalAmount < expenseData.amount) {
+  const handleSaveExpense = (expenseData: Omit<Expense, 'id'>, editingId?: string, separateTaxAmount = 0, separateTaxRate = 0) => {
+    if (
+      !isPositiveAmount(expenseData.amount) ||
+      !Number.isFinite(separateTaxAmount) ||
+      separateTaxAmount < 0 ||
+      !Number.isFinite(separateTaxRate) ||
+      separateTaxRate < 0 ||
+      expenseData.taxAmount < 0 ||
+      expenseData.totalAmount < expenseData.amount
+    ) {
       showToast('Enter a valid positive amount and non-negative fee or tax.');
       return;
     }
     const todayStr = new Date().toISOString().slice(0, 10);
     const expDate = expenseData.date || todayStr;
+    const taxPaymentMethod: PaymentMethod = expenseData.deductionSource === 'bank_account'
+      ? 'Bank Direct / Card Online'
+      : expenseData.deductionSource === 'cash_on_hand'
+      ? 'Cash'
+      : 'Mobile Money Direct (Airtime/Data/Pay)';
 
     if (editingId) {
+      const currentTaxEntry = expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === editingId);
+      const updatedTaxEntry: Expense | null = separateTaxAmount > 0
+        ? {
+            ...(currentTaxEntry || expenseData),
+            id: currentTaxEntry?.id || createId('tax'),
+            title: `${expenseData.title} - Tax / Fee`,
+            amount: separateTaxAmount,
+            taxAmount: 0,
+            taxRate: separateTaxRate,
+            totalAmount: separateTaxAmount,
+            paymentMethod: taxPaymentMethod,
+            category: 'Taxes & Fees',
+            deductionSource: expenseData.deductionSource,
+            isTaxDeductible: expenseData.isTaxDeductible,
+            isSavings: false,
+            isWithdrawal: false,
+            isBankToMobileTransfer: false,
+            transferRecipientType: undefined,
+            sourceAccount: undefined,
+            destinationAccount: undefined,
+            transferFee: undefined,
+            isTaxEntry: true,
+            parentExpenseId: editingId,
+            vendor: expenseData.vendor,
+            date: expDate,
+            notes: `Tax or fee recorded separately for ${expenseData.title}`,
+          }
+        : null;
       setExpenses((prev) => {
-        const updated = prev.map((e) => (e.id === editingId ? { ...e, ...expenseData, date: expDate } : e));
+        const updated = prev
+          .filter((e) => updatedTaxEntry || !(e.isTaxEntry && e.parentExpenseId === editingId))
+          .map((e) => (e.id === editingId ? { ...e, ...expenseData, date: expDate } : e));
+        if (updatedTaxEntry) {
+          const taxExists = updated.some((e) => e.id === updatedTaxEntry.id);
+          return taxExists
+            ? updated.map((e) => (e.id === updatedTaxEntry.id ? updatedTaxEntry : e))
+            : [updatedTaxEntry, ...updated];
+        }
         return updated;
       });
-      showToast(`Transaction "${expenseData.title}" updated!`);
+      showToast(`Expense "${expenseData.title}" updated!`);
     } else {
       const newExpense: Expense = {
         id: createId('exp'),
         ...expenseData,
         date: expDate,
       };
+      const taxEntry: Expense | null = separateTaxAmount > 0
+        ? {
+            ...newExpense,
+            id: createId('tax'),
+            title: `${expenseData.title} - Tax / Fee`,
+            amount: separateTaxAmount,
+            taxAmount: 0,
+            taxRate: separateTaxRate,
+            totalAmount: separateTaxAmount,
+            paymentMethod: taxPaymentMethod,
+            category: 'Taxes & Fees',
+            isSavings: false,
+            isWithdrawal: false,
+            isBankToMobileTransfer: false,
+            sourceAccount: undefined,
+            destinationAccount: undefined,
+            transferRecipientType: undefined,
+            transferFee: undefined,
+            isTaxEntry: true,
+            parentExpenseId: newExpense.id,
+            notes: `Tax or fee recorded separately for ${expenseData.title}`,
+          }
+        : null;
       setExpenses((prev) => {
-        const updated = [newExpense, ...prev];
+        const updated = taxEntry ? [newExpense, taxEntry, ...prev] : [newExpense, ...prev];
         return updated;
       });
-      showToast(`Transaction "${expenseData.title}" logged successfully!`);
+      showToast(`Expense "${expenseData.title}" logged successfully${taxEntry ? ' with a separate tax/fee entry' : ''}!`);
     }
 
     // Auto-switch view month if expense date is in a different month
@@ -383,12 +455,25 @@ export default function App() {
   };
 
   const handleDeleteExpense = (expenseId: string) => {
-    if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
+    if (!window.confirm('Delete this expense or tax/fee record? This cannot be undone.')) return;
     setExpenses((prev) => {
-      const updated = prev.filter((e) => e.id !== expenseId);
+      const deletedRecord = prev.find((e) => e.id === expenseId);
+      const updated = prev.filter((e) =>
+        e.id !== expenseId &&
+        !(deletedRecord && !deletedRecord.isTaxEntry && e.isTaxEntry && e.parentExpenseId === expenseId)
+      );
       return updated;
     });
-    showToast('Transaction deleted');
+    showToast('Expense record deleted');
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    if (expense.isTaxEntry) {
+      showToast('Edit this tax/fee through its linked expense.');
+      return;
+    }
+    setExpenseToEdit(expense);
+    setIsExpenseModalOpen(true);
   };
 
   // Budget handler
@@ -655,10 +740,7 @@ export default function App() {
               debts={debts}
               budget={currentBudget}
               selectedMonth={selectedMonth}
-              onEditExpense={(expense) => {
-                setExpenseToEdit(expense);
-                setIsExpenseModalOpen(true);
-              }}
+              onEditExpense={handleEditExpense}
               onDeleteExpense={handleDeleteExpense}
               onOpenExpenseModal={() => {
                 setExpenseToEdit(null);
@@ -691,10 +773,7 @@ export default function App() {
               setExpenseModalInitialMode('transfer');
               setIsExpenseModalOpen(true);
             }}
-            onEditExpense={(exp) => {
-              setExpenseToEdit(exp);
-              setIsExpenseModalOpen(true);
-            }}
+            onEditExpense={handleEditExpense}
             onDeleteExpense={handleDeleteExpense}
           />
         )}
@@ -800,6 +879,16 @@ export default function App() {
         }}
         onSave={handleSaveExpense}
         expenseToEdit={expenseToEdit}
+        existingTaxAmount={
+          expenseToEdit
+            ? expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === expenseToEdit.id)?.amount ?? expenseToEdit.taxAmount
+            : 0
+        }
+        existingTaxRate={
+          expenseToEdit
+            ? expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === expenseToEdit.id)?.taxRate ?? expenseToEdit.taxRate ?? 0
+            : 0
+        }
         selectedMonth={selectedMonth}
         initialMode={expenseModalInitialMode}
       />

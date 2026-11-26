@@ -61,6 +61,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Subscriptions': '#f97316', // Orange
   'Shopping & Personal': '#e11d48', // Rose
   'Savings & Investments': '#10b981', // Emerald
+  'Taxes & Fees': '#f59e0b',
   'Bank to Mobile Transfer': '#6366f1', // Indigo
   'Mobile Money to Mobile Money Transfer': '#06b6d4', // Cyan
   'Internal Account Transfer': '#6366f1',
@@ -103,7 +104,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     .filter((e) => e.paymentMethod === 'Debit Card / ATM Cashout' || (e.title && (e.title.toLowerCase().includes('card') || e.title.toLowerCase().includes('debit'))))
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const totalCashoutTaxes = cashoutEntries.reduce((sum, e) => sum + (e.taxAmount || 0), 0);
+  const cashoutIds = new Set(cashoutEntries.map((e) => e.id));
+  const totalCashoutTaxes = expenses.reduce(
+    (sum, e) => sum + (
+      e.isTaxEntry && e.parentExpenseId && cashoutIds.has(e.parentExpenseId)
+        ? e.amount
+        : !e.isTaxEntry && cashoutIds.has(e.id)
+        ? e.taxAmount || 0
+        : 0
+    ),
+    0
+  );
 
   const targetSavingsValue = (budget?.savingsTarget || 20000) * recordedMonthsCount;
 
@@ -116,8 +127,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
   const deductibleTax = workExpenses
     .filter((e) => e.isTaxDeductible)
-    .reduce((sum, e) => sum + e.taxAmount, 0);
-  const totalTaxesPaid = expenses.reduce((sum, e) => sum + e.taxAmount, 0);
+    .reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
+  const totalTaxesPaid = expenses.reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
 
   // Category Breakdown Data (excluding cashouts, transfers and pure savings)
   const categoryMap: Record<string, number> = {};

@@ -84,7 +84,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
   // Calculate stats
   const totalSpend = expenses.reduce((sum, e) => sum + e.totalAmount, 0);
-  const totalTaxIncurred = expenses.reduce((sum, e) => sum + e.taxAmount, 0);
+  const totalTaxIncurred = expenses.reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
 
   const totalTransferred = expenses
     .filter((e) => isSelfBankToMobileTransfer(e))
@@ -101,7 +101,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const personalTotal = personalExpenses.reduce((sum, e) => sum + e.totalAmount, 0);
   const deductibleTaxes = workExpenses
     .filter((e) => e.isTaxDeductible)
-    .reduce((sum, e) => sum + e.taxAmount, 0);
+    .reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
 
   const categoriesList: ExpenseCategory[] = [
     'Bank to Mobile Transfer',
@@ -118,6 +118,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     'Subscriptions',
     'Shopping & Personal',
     'Savings & Investments',
+    'Taxes & Fees',
     'Other',
   ];
 
@@ -128,10 +129,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Receipt className="w-6 h-6 text-emerald-500" />
-            Cashbook Ledger & Transactions
+            Expense Tracker
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-            Track daily spendings, bank-to-mobile transfers, vendor records, payment methods, and taxes.
+            Record expenses by amount, category, date, and payment method. Taxes and fees are logged separately.
           </p>
         </div>
 
@@ -151,7 +152,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Log Transaction
+            Add Expense
           </button>
         </div>
       </div>
@@ -164,7 +165,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             {formatUGX(totalSpend)}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            {expenses.length} entries logged
+            {expenses.length} expense and tax/fee entries
           </div>
         </div>
 
@@ -308,9 +309,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       {filteredExpenses.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">No ledger entries found</h3>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No expenses recorded</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Log your daily spending, bank-to-mobile transfers, or cash withdrawals.
+            Add an expense to start keeping track of your spending.
           </p>
           <div className="flex items-center justify-center gap-2 pt-2">
             {onOpenTransferModal && (
@@ -325,7 +326,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               onClick={onAddExpense}
               className="px-4 py-2 bg-emerald-600 text-white font-medium text-xs rounded-xl shadow-sm hover:bg-emerald-500"
             >
-              Log New Transaction
+              Add Expense
             </button>
           </div>
         </div>
@@ -335,13 +336,13 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-3 px-4">Transaction & Entity</th>
+                  <th className="py-3 px-4">Expense & Payee</th>
                   <th className="py-3 px-4">Type / Purpose</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Channel / Date</th>
-                  <th className="py-3 px-4">Subtotal</th>
-                  <th className="py-3 px-4">Fee / Tax</th>
-                  <th className="py-3 px-4">Total Amount</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Separate Tax / Fee</th>
+                  <th className="py-3 px-4">Recorded Total</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -354,7 +355,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                     {/* Title & Entity */}
                     <td className="py-3.5 px-4 font-medium">
                       <div className="font-semibold text-slate-900 dark:text-white text-sm">
-                        {exp.title}
+                        {exp.isTaxEntry
+                          ? `Tax / Fee - ${exp.title.endsWith(' - Tax / Fee') ? exp.title.slice(0, -12) : exp.title}`
+                          : exp.title}
                       </div>
                       {(() => {
                         const srcAcct = getExpenseSourceAccount(exp);
@@ -416,7 +419,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
                     {/* Purpose / Type */}
                     <td className="py-3.5 px-4">
-                      {isSelfBankToMobileTransfer(exp) ? (
+                      {exp.isTaxEntry ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                          Tax / Fee
+                        </span>
+                      ) : isSelfBankToMobileTransfer(exp) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-indigo-500 text-white shadow-sm">
                           <ArrowRightLeft className="w-2.5 h-2.5" /> Transfer (Self)
                         </span>
@@ -462,7 +469,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                       }`}>
-                        {exp.category}
+                        {exp.isTaxEntry ? 'Tax / Fees' : exp.category}
                       </span>
                     </td>
 
@@ -500,10 +507,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 
                     {/* Tax Incurred / Transfer Fee */}
                     <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400 font-mono text-xs">
-                      {formatUGX(exp.taxAmount)}
-                      {isBankToMobileTransfer(exp) ? (
+                      {exp.isTaxEntry
+                        ? 'Separate record'
+                        : exp.taxAmount > 0
+                        ? formatUGX(exp.taxAmount)
+                        : '—'}
+                      {!exp.isTaxEntry && isBankToMobileTransfer(exp) ? (
                         <span className="text-[10px] text-slate-400 ml-1 font-sans">(Bank Fee)</span>
-                      ) : exp.taxRate !== undefined && (
+                      ) : !exp.isTaxEntry && exp.taxRate !== undefined && (
                         <span className="text-[10px] text-slate-400 ml-1 font-sans">({exp.taxRate}%)</span>
                       )}
                     </td>
@@ -516,13 +527,15 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => onEditExpense(exp)}
-                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                          title="Edit Transaction"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
+                        {!exp.isTaxEntry && (
+                          <button
+                            onClick={() => onEditExpense(exp)}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                            title="Edit Expense"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => onDeleteExpense(exp.id)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition"

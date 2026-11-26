@@ -31,8 +31,10 @@ export type ExpenseModalMode = 'spending' | 'transfer' | 'cashout' | 'savings';
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (expenseData: Omit<Expense, 'id'>, editingId?: string) => void;
+  onSave: (expenseData: Omit<Expense, 'id'>, editingId?: string, separateTaxAmount?: number, separateTaxRate?: number) => void;
   expenseToEdit?: Expense | null;
+  existingTaxAmount?: number;
+  existingTaxRate?: number;
   selectedMonth: string;
   initialMode?: ExpenseModalMode;
 }
@@ -117,6 +119,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onClose,
   onSave,
   expenseToEdit,
+  existingTaxAmount = 0,
+  existingTaxRate = 0,
   selectedMonth,
   initialMode = 'spending',
 }) => {
@@ -328,8 +332,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (expenseToEdit) {
       setTitle(expenseToEdit.title);
       setAmount(expenseToEdit.amount);
-      setTaxAmount(expenseToEdit.taxAmount);
-      setTaxRate(expenseToEdit.taxRate ?? 0.0);
+      setTaxAmount(existingTaxAmount ?? expenseToEdit.taxAmount);
+      setTaxRate(existingTaxRate ?? expenseToEdit.taxRate ?? 0.0);
       setPurpose(expenseToEdit.purpose);
       setCategory(expenseToEdit.category);
       setPaymentMethod(expenseToEdit.paymentMethod);
@@ -435,7 +439,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         setVendor('External Savings');
       }
     }
-  }, [expenseToEdit, selectedMonth, isOpen, initialMode]);
+  }, [expenseToEdit, existingTaxAmount, existingTaxRate, selectedMonth, isOpen, initialMode]);
 
   if (!isOpen) return null;
 
@@ -511,9 +515,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       {
         title: title.trim(),
         amount: numAmount,
-        taxAmount: numTax,
-        taxRate,
-        totalAmount,
+        taxAmount: 0,
+        taxRate: undefined,
+        totalAmount: numAmount,
         purpose: isThirdPartyTransfer || entryMode === 'spending' ? purpose : 'personal',
         category: resolvedCategory,
         paymentMethod: resolvedPaymentMethod,
@@ -531,11 +535,15 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         recipientMobileNetwork: isTransfer ? recipientNetwork : undefined,
         recipientPhone: recipientPhone.trim() || undefined,
         referenceNumber: refNumber.trim() || undefined,
-        transferFee: isTransfer ? numTax : undefined,
+        transferFee: undefined,
+        isTaxEntry: false,
+        parentExpenseId: undefined,
         vendor: resolvedVendor,
         notes: notes.trim(),
       },
-      expenseToEdit?.id
+      expenseToEdit?.id,
+      numTax,
+      taxRate
     );
     onClose();
   };
@@ -565,7 +573,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             )}
             <span>
               {expenseToEdit
-                ? 'Edit Transaction Entry'
+                ? 'Edit Expense'
                 : entryMode === 'transfer'
                 ? transferRecipientType === 'third_party'
                   ? 'Transfer to Third-Party (Expense)'
@@ -1294,7 +1302,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 Savings Sent from MTN MoMo
               </div>
               <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                This daily saving is sent to your external savings destination and deducted from <strong>MTN MoMo</strong>. Savings are calculated <strong>minus any tax involved</strong> (Deposit Subtotal minus Tax).
+                This daily saving is sent to your external savings destination and deducted from <strong>MTN MoMo</strong>.                 The savings amount is recorded separately from any tax or fee charged.
               </p>
             </div>
           )}
@@ -1396,7 +1404,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {entryMode === 'transfer' ? 'Transfer Amount (UGX) *' : 'Subtotal Amount (UGX) *'}
+                {entryMode === 'transfer' ? 'Transfer Amount (UGX) *'                 : 'Expense Amount (UGX) *'}
               </label>
               <input
                 type="number"
@@ -1412,7 +1420,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {entryMode === 'transfer' ? 'Bank Transfer Fee / Charge' : 'Tax / Fee Incurred (UGX)'}
+                {entryMode === 'transfer' ? 'Transfer Fee (separate record)' : 'Tax / Fee (separate record)'}
               </label>
               <input
                 type="number"
@@ -1465,8 +1473,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     ? 'Total Deducted from Bank as Expense (Principal + Fee):'
                     : 'Total Deducted from Bank (Principal + Fee):'
                   : entryMode === 'savings'
-                  ? 'Net Savings Sent Out (Subtotal - Tax):'
-                  : 'Total Amount (Subtotal + Tax/Fee):'}
+                  ? 'Savings Amount (tax/fee recorded separately):'
+                  : 'Expense Amount (tax/fee recorded separately):'}
               </span>
               <span className="text-[10px] text-slate-500 font-mono">
                 {entryMode === 'transfer'
@@ -1481,7 +1489,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </span>
             </div>
             <span className="font-extrabold text-slate-900 dark:text-white text-base font-mono">
-              {entryMode === 'savings' ? formatUGX(Math.max(0, numAmount - numTax)) : formatUGX(totalAmount)}
+              {entryMode === 'transfer' ? formatUGX(totalAmount) : formatUGX(numAmount)}
             </span>
           </div>
 
@@ -1489,7 +1497,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Transaction Date
+                {entryMode === 'transfer' ? 'Transaction Date' : 'Expense Date'}
               </label>
               <input
                 type="date"
@@ -1534,7 +1542,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Transaction Notes / Context
+              {entryMode === 'transfer' ? 'Transaction Notes / Context' : 'Expense Notes'}
             </label>
             <input
               type="text"
@@ -1580,7 +1588,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 ? isThirdPartyTransfer
                   ? 'Log Transfer Expense'
                   : 'Execute Bank Transfer' 
-                : 'Log Transaction'}
+                : 'Save Expense'}
             </button>
           </div>
 

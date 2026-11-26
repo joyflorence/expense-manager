@@ -5,6 +5,7 @@ import { normalizeMonthlySalary } from './salary';
  * Check if an expense entry is a Bank to Mobile Money transfer or internal account transfer
  */
 export function isBankToMobileTransfer(e: Expense): boolean {
+  if (e.isTaxEntry) return false;
   if (e.sourceAccount && e.destinationAccount) return true;
   if (e.isBankToMobileTransfer) return true;
   if (
@@ -70,6 +71,7 @@ export function isThirdPartyTransferExpense(e: Expense): boolean {
  * Check if an expense entry is a Cash Withdrawal / Cashout
  */
 export function isWithdrawalEntry(e: Expense): boolean {
+  if (e.isTaxEntry) return false;
   if (isSelfBankToMobileTransfer(e)) return false;
   if (e.isSavings) return false;
   if (e.isWithdrawal) return true;
@@ -96,6 +98,7 @@ export function isDirectDigitalEntry(e: Expense): boolean {
   if (isSelfBankToMobileTransfer(e)) return false;
   if (isWithdrawalEntry(e)) return false;
   if (e.isSavings || e.category === 'Savings & Investments') return false;
+  if (e.isTaxEntry) return e.deductionSource !== 'cash_on_hand';
 
   return (
     e.deductionSource === 'mobile_money_bank' ||

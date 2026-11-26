@@ -89,7 +89,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const cashSpendingEntries = expenses.filter((e) => isCashOnHandSpending(e));
   const savingsEntries = expenses.filter((e) => isSavingsEntry(e));
 
-  const totalTaxIncurred = expenses.reduce((sum, e) => sum + e.taxAmount, 0);
+  const totalTaxIncurred = expenses.reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
   const targetSavingsValue = (budget?.savingsTarget || 20000) * recordedMonthsCount;
   const savingsPct = targetSavingsValue > 0 ? Math.min(100, Math.round((balances.totalSavings / targetSavingsValue) * 100)) : 0;
 
@@ -97,7 +97,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const workExpenses = expenses.filter((e) => e.purpose === 'work' && !e.isSavings && !isWithdrawalEntry(e) && !isSelfBankToMobileTransfer(e));
   const deductibleTaxes = workExpenses
     .filter((e) => e.isTaxDeductible)
-    .reduce((sum, e) => sum + e.taxAmount, 0);
+    .reduce((sum, e) => sum + (e.isTaxEntry ? e.amount : e.taxAmount), 0);
 
   // Debts & Liabilities calculation
   const debtItems = debts || [];
