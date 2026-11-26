@@ -207,7 +207,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                   <tr key={expense.id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                     <td className="px-4 py-4">
                       <div className="font-medium text-slate-950 dark:text-white">
-                        {expense.isTaxEntry ? `Tax / fee · ${expense.title.replace(/ - Tax \\/ Fee$/, '')}` : expense.title}
+                        {expense.isTaxEntry ? `Tax / fee · ${expense.title.replace(' - Tax / Fee', '')}` : expense.title}
                       </div>
                       {expense.vendor && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{expense.vendor}</div>}
                       {expense.notes && <div className="mt-1 max-w-sm truncate text-xs text-slate-500 dark:text-slate-400">{expense.notes}</div>}
