@@ -15,7 +15,9 @@ const TAX_FEE_TYPES: TaxFeeType[] = [
   'Value added tax',
   'Local tax',
   'Bank charge',
+  'Bank transfer fee',
   'Mobile money charge',
+  'Mobile money transfer fee',
   'License or permit',
   'Other tax or fee',
 ];
@@ -121,7 +123,7 @@ export const TaxFeeModal: React.FC<TaxFeeModalProps> = ({ isOpen, onClose, onSav
                 {recordToEdit ? 'Edit tax or fee' : 'Record tax or fee'}
               </span>
               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                Record a payment independently or link it to an expense later in your notes.
+                Record only the tax or fee incurred. No expense or transfer amount is needed.
               </span>
             </span>
           </div>
@@ -134,7 +136,7 @@ export const TaxFeeModal: React.FC<TaxFeeModalProps> = ({ isOpen, onClose, onSav
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="tax-fee-description" className={labelClass}>Tax or fee description</label>
-              <input id="tax-fee-description" required autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className={fieldClass} placeholder="e.g. Monthly withholding tax" />
+              <input id="tax-fee-description" required autoFocus value={title} onChange={(event) => setTitle(event.target.value)} className={fieldClass} placeholder="e.g. Bank transfer fee" />
             </div>
             <div>
               <label htmlFor="tax-fee-type" className={labelClass}>Type</label>
@@ -143,11 +145,12 @@ export const TaxFeeModal: React.FC<TaxFeeModalProps> = ({ isOpen, onClose, onSav
               </select>
             </div>
             <div>
-              <label htmlFor="tax-fee-amount" className={labelClass}>Amount paid (UGX)</label>
+              <label htmlFor="tax-fee-amount" className={labelClass}>Tax or fee amount (UGX)</label>
               <input id="tax-fee-amount" required type="number" min="1" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className={`${fieldClass} font-mono`} placeholder="0" />
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Enter just the tax/fee amount, not the transfer amount.</p>
             </div>
             <div>
-              <label htmlFor="tax-fee-date" className={labelClass}>Payment date</label>
+              <label htmlFor="tax-fee-date" className={labelClass}>Date incurred / paid</label>
               <input id="tax-fee-date" required type="date" value={date} onChange={(event) => setDate(event.target.value)} className={fieldClass} />
             </div>
             <div>

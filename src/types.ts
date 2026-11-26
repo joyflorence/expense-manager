@@ -102,7 +102,9 @@ export type TaxFeeType =
   | 'Value added tax'
   | 'Local tax'
   | 'Bank charge'
+  | 'Bank transfer fee'
   | 'Mobile money charge'
+  | 'Mobile money transfer fee'
   | 'License or permit'
   | 'Other tax or fee';
 
