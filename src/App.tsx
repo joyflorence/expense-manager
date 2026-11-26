@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { ExpenseView } from './components/ExpenseView';
 import { ExpenseAnalyticsView } from './components/ExpenseAnalyticsView';
 import { ExpenseModal } from './components/ExpenseModal';
+import { TaxFeeModal } from './components/TaxFeeModal';
 import { ExportImportModal } from './components/ExportImportModal';
 import { deleteExpense, loadExpenses, saveExpense } from './api';
 import { supabase, useSupabaseSession } from './auth';
@@ -46,6 +47,8 @@ export default function App() {
   });
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
+  const [isTaxFeeModalOpen, setIsTaxFeeModalOpen] = useState(false);
+  const [taxFeeToEdit, setTaxFeeToEdit] = useState<Expense | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'expenses' | 'analytics'>('expenses');
@@ -274,21 +277,49 @@ export default function App() {
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((previous) => {
       const selected = previous.find((expense) => expense.id === expenseId);
+      const selectedIsTax = selected?.isTaxEntry === true || selected?.category === 'Taxes & Fees';
       return previous.filter((expense) => (
         expense.id !== expenseId &&
-        !(selected && !selected.isTaxEntry && expense.isTaxEntry && expense.parentExpenseId === expenseId)
+        !(selected && !selectedIsTax && (expense.isTaxEntry || expense.category === 'Taxes & Fees') && expense.parentExpenseId === expenseId)
       ));
     });
-    showToast('Expense record deleted.');
+    showToast('Record deleted.');
   };
 
   const handleEditExpense = (expense: Expense) => {
-    if (expense.isTaxEntry) {
+    if (expense.isTaxEntry || expense.category === 'Taxes & Fees') {
+      if (!expense.parentExpenseId) {
+        setTaxFeeToEdit(expense);
+        setIsTaxFeeModalOpen(true);
+        return;
+      }
       showToast('Edit this tax or fee through its linked expense.');
       return;
     }
     setExpenseToEdit(expense);
     setIsExpenseModalOpen(true);
+  };
+
+  const handleSaveTaxFee = (recordData: Omit<Expense, 'id'>, editingId?: string) => {
+    if (!Number.isFinite(recordData.amount) || recordData.amount <= 0 || !recordData.date) {
+      showToast('Enter a valid positive amount and payment date.');
+      return;
+    }
+
+    const taxFeeRecord: Expense = {
+      ...recordData,
+      id: editingId || crypto.randomUUID(),
+      taxAmount: 0,
+      totalAmount: recordData.amount,
+      category: 'Taxes & Fees',
+      isTaxEntry: true,
+      parentExpenseId: undefined,
+    };
+
+    setExpenses((previous) => editingId
+      ? previous.map((expense) => expense.id === editingId ? taxFeeRecord : expense)
+      : [taxFeeRecord, ...previous]);
+    showToast(editingId ? 'Tax or fee record updated.' : 'Tax or fee record added.');
   };
 
   const downloadBackup = (records: Expense[], reason: 'clear') => {
@@ -400,6 +431,10 @@ export default function App() {
               setExpenseToEdit(null);
               setIsExpenseModalOpen(true);
             }}
+            onAddTax={() => {
+              setTaxFeeToEdit(null);
+              setIsTaxFeeModalOpen(true);
+            }}
             onEditExpense={handleEditExpense}
             onDeleteExpense={handleDeleteExpense}
           />
@@ -446,6 +481,15 @@ export default function App() {
             ? expenses.find((expense) => expense.isTaxEntry && expense.parentExpenseId === expenseToEdit.id)?.taxRate ?? expenseToEdit.taxRate ?? 0
             : 0
         }
+      />
+      <TaxFeeModal
+        isOpen={isTaxFeeModalOpen}
+        onClose={() => {
+          setIsTaxFeeModalOpen(false);
+          setTaxFeeToEdit(null);
+        }}
+        onSave={handleSaveTaxFee}
+        recordToEdit={taxFeeToEdit}
       />
       <ExportImportModal
         isOpen={isExportModalOpen}

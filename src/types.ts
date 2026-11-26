@@ -96,6 +96,16 @@ export type InvestmentType =
   | 'Business investment'
   | 'Other investment';
 
+export type TaxFeeType =
+  | 'Income tax'
+  | 'Withholding tax'
+  | 'Value added tax'
+  | 'Local tax'
+  | 'Bank charge'
+  | 'Mobile money charge'
+  | 'License or permit'
+  | 'Other tax or fee';
+
 export interface ExpenseCategoryDetails {
   savingsGoal?: string;
   destination?: string;
@@ -103,6 +113,7 @@ export interface ExpenseCategoryDetails {
   provider?: string;
   payee?: string;
   reference?: string;
+  taxFeeType?: TaxFeeType;
 }
 
 export interface Expense {

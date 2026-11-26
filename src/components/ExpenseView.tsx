@@ -6,6 +6,7 @@ import { CalendarDays, FileCheck, Plus, Receipt, Search, Trash2, Pencil, Tags } 
 interface ExpenseViewProps {
   expenses: Expense[];
   onAddExpense: () => void;
+  onAddTax: () => void;
   onEditExpense: (expense: Expense) => void;
   onDeleteExpense: (expenseId: string) => void;
 }
@@ -38,6 +39,7 @@ const isTaxOrFeeRecord = (expense: Expense) => (
 export const ExpenseView: React.FC<ExpenseViewProps> = ({
   expenses,
   onAddExpense,
+  onAddTax,
   onEditExpense,
   onDeleteExpense,
 }) => {
@@ -129,11 +131,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         </div>
         <button
           type="button"
-          onClick={onAddExpense}
+          onClick={recordType === 'expenses' ? onAddExpense : onAddTax}
           className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500"
         >
           <Plus className="h-4 w-4" />
-          Record expense
+          {recordType === 'expenses' ? 'Record expense' : 'Record tax / fee'}
         </button>
       </header>
 
@@ -255,7 +257,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               {visibleRecords.length === 0
                 ? recordType === 'expenses'
                   ? 'Record your first expense to start building a clear picture of your spending.'
-                  : 'Taxes and fees linked to expenses will appear here as separate records.'
+                  : 'Record a tax or fee payment here on its own, or add it alongside an expense.'
                 : 'Try changing your search or filters.'}
             </p>
             {recordType === 'expenses' && expenseRecords.length === 0 && (
@@ -272,7 +274,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60">
                   {recordType === 'expenses' ? (
                     <>
-                      <th className="px-4 py-3.5">Expense</th>
+                      <th className="px-4 py-3.5">Related expense</th>
                       <th className="px-4 py-3.5">Category</th>
                       <th className="px-4 py-3.5">Date &amp; payment</th>
                       <th className="px-4 py-3.5 text-right">Amount</th>
@@ -306,10 +308,21 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                           <FileCheck className="h-3.5 w-3.5" /> Tax-deductible
                         </span>
                       )}
+                      {recordType === 'taxes' && expense.categoryDetails?.taxFeeType && (
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {expense.categoryDetails.taxFeeType}
+                          {expense.categoryDetails.reference && ` · Ref: ${expense.categoryDetails.reference}`}
+                        </div>
+                      )}
+                      {recordType === 'taxes' && expense.vendor && (
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Paid to: {expense.vendor}</div>
+                      )}
                     </td>
                     {recordType === 'taxes' ? (
                       <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">
-                        {expenses.find((parent) => parent.id === expense.parentExpenseId)?.title || expense.title.replace(' - Tax / Fee', '')}
+                        {expense.parentExpenseId
+                          ? expenses.find((parent) => parent.id === expense.parentExpenseId)?.title || expense.title.replace(' - Tax / Fee', '')
+                          : 'Independent payment'}
                       </td>
                     ) : (
                       <td className="px-4 py-4">
@@ -329,7 +342,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                     )}
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {recordType === 'expenses' && (
+                        {(recordType === 'expenses' || !expense.parentExpenseId) && (
                           <button type="button" onClick={() => onEditExpense(expense)} aria-label={`Edit ${expense.title}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">
                             <Pencil className="h-4 w-4" />
                           </button>
